@@ -1,0 +1,147 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The code — King&#x27;s Valley (Konami, 1985)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:1120px;margin:0 auto}
+.n{max-width:68ch}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance}
+a{color:var(--cyan)}
+img{image-rendering:pixelated;max-width:100%;height:auto;display:block}
+header.top{display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  padding:4rem 0 2rem;text-align:center}
+header.top img{width:min(100%,642px)}
+.claim{max-width:60ch;color:var(--suave);font-size:1.05rem}
+.claim b{color:var(--tinta);font-weight:400}
+.ficha{display:flex;flex-wrap:wrap;justify-content:center;gap:0 1.5rem;width:100%;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);
+  border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);padding:.85rem 0}
+.ficha b{color:var(--rojo);font-weight:400}
+nav{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;padding:1.25rem 0;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--suave);text-decoration:none;border-bottom:1px solid transparent}
+nav a:hover,nav a:focus{color:var(--tinta);border-bottom-color:var(--rojo)}
+nav.docs{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);
+  margin-bottom:1rem}
+section{margin-top:4.5rem;scroll-margin-top:1rem}
+section>h2{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;
+  border-left:3px solid var(--rojo);padding-left:.9rem;margin:0 0 1.5rem}
+.cifras{display:grid;gap:1px;background:var(--linea);border:1px solid var(--linea);
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.cifra{background:var(--panel);padding:1.1rem}
+.cifra b{display:block;font-size:1.7rem;color:var(--oro);font-weight:400;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.cifra span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--suave)}
+.hall{border-top:1px solid var(--linea);padding-top:1.75rem;margin-top:2.5rem}
+.hall:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.hall h3{margin:0 0 .75rem;font-size:1.15rem;color:var(--rojo)}
+.hall h4{color:var(--oro);margin:1.5rem 0 .5rem;font-size:.95rem}
+.hall p{margin:0 0 1rem}
+pre.asm{background:var(--panel);border-left:2px solid var(--verde);margin:1.25rem 0;
+  padding:1rem 1.1rem;overflow-x:auto;font-size:13px;line-height:1.6;color:var(--tinta)}
+.par{display:grid;gap:1.25rem;grid-template-columns:1fr}
+@media(min-width:820px){.par{grid-template-columns:1fr 1fr}}
+.par figure{margin:0}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+td.num{font-variant-numeric:tabular-nums;color:var(--oro)}
+.nivel{margin-top:2rem}
+.nivel h3{margin:0 0 .9rem;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase}
+.nivel em{color:var(--cyan);font-style:normal}
+.sep{color:var(--suave);margin:0 .6rem}
+.rejilla{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rejilla figure{margin:0;background:var(--panel);box-shadow:0 0 0 1px var(--linea)}
+.rejilla figcaption{display:flex;justify-content:space-between;padding:.45rem .65rem;
+  font-size:11px;color:var(--suave);border-top:1px solid var(--linea)}
+.dir{font-variant-numeric:tabular-nums;color:var(--verde)}
+footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+
+/* Aviso de trabajo en curso: tiene que verse antes que las cifras, porque un
+   100% mal leido hace mas dano que no ponerlo. */
+.aviso{background:#3a2a10;border-left:3px solid var(--oro);margin:1.5rem auto;
+  padding:1rem 1.2rem;max-width:900px;border-radius:4px}
+.aviso p{margin:0;color:var(--tinta);font-size:15px;line-height:1.65}
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;margin:1.5rem 0}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:auto;image-rendering:pixelated;
+  border:1px solid var(--linea);border-radius:3px}
+.galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html">The game</a><a href="THE-CARTRIDGE.html">The cartridge</a><a href="THE-CODE.html" style=color:var(--tinta)>The code</a><a href="FINDINGS.html">Findings</a><a href="IN-THE-EMULATOR.html">In the emulator</a><a href="OPEN-QUESTIONS.html">Open questions</a><a href="es/EL-CODIGO.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1 id="the-code">The code</h1>
+<p>The listing&#x27;s 651 routines all have a name and a description, and <b>45.5 %</b> of the instructions carry a comment of their own. This page walks through the pieces you need in order to read the rest.</p>
+<h2 id="the-task-dispatcher">The task dispatcher</h2>
+<p>The game is a state machine with eleven tasks. <code>avanza_un_cuadro</code> (0x40A3) bumps the frame counter and <code>despacha_tarea_activa</code> (0x40B6) jumps to whichever task the low byte of 0xE000 names.</p>
+<p>The dispatch uses a trick that shows up <b>seven times</b> in the cartridge:</p>
+<pre><code>    call L_404B
+    defw target0, target1, target2, ...</code></pre>
+<p><code>L_404B</code> (0x404B) does <code>add a,a</code>, recovers the return address with <code>pop hl</code> — which is precisely the table following the <code>call</code> — and reads the right word from there. Then <code>jp (hl)</code>. The table is never executed: it is <b>read</b> off the stack.</p>
+<p>All seven tables are declared in the <code>.nocode</code>, because otherwise the tracer reads them as code and out comes a listing that reassembles fine and lies.</p>
+<h2 id="the-position-record">The position record</h2>
+<p>The piece that opens up the rest of the game is not a player routine: it is <code>lee_celda_de_sala</code> (0x50BC), read backwards. It takes a <b>pointer to a position record</b> in HL and uses:</p>
+<ul><li><code>(HL+0)</code> plus an adjustment, shifted three bits: the <b>row</b>.</li><li><code>(HL+2)</code> and <code>(HL+3)</code> as a <b>16-bit</b> quantity, plus a signed offset, shifted three bits: the <b>column</b>.</li></ul>
+<p>That gives the format of the explorer&#x27;s record, which starts at 0xE137, and three bytes below it sits the state — confirmed by <code>sondea_una_celda</code> (0x5092), which with HL at 0xE137 does <code>dec hl</code> three times and reads the result as the state to compare against 2.</p>
+<p>That same format is used by the entities, the enemies and the candidate position scratch at 0xE149. Which is why the probe routines serve all of them.</p>
+<h2 id="the-24-bit-arithmetic">The 24-bit arithmetic</h2>
+<p><code>avanza_posicion_24_bits</code> (0x73F6) is the engine behind every movement. It comes in with HL pointing at a 16-bit pair and DE holding the velocity, and does:</p>
+<pre><code>    add hl,de       ; the two low bytes
+    ld a,b
+    adc a,c         ; and the third, with the carry</code></pre>
+<p>That is <b>twenty-four bits</b>: fraction, low pixel, high pixel. For the explorer those three bytes are 0xE138, 0xE139 and 0xE13A.</p>
+<p>Bit 0 of <code>(IX-2)</code> — which for the explorer is 0xE136, the direction byte — decides whether the velocity is <b>negated</b> before adding, with a two&#x27;s complement of DE and a complement of C. That is how the same code serves both directions, and why that bit is &quot;which way he faces&quot;.</p>
+<h2 id="the-six-entity-lists">The six entity lists</h2>
+<p>Six parallel tables, each with its own accessor. You do not have to guess how big an entry is: it is in the <b>multiplication</b>.</p>
+<table><tr><th>routine</th><th>chain</th><th>stride</th><th>base</th><th>index</th><th>limit</th></tr><tr><td>0x6A12</td><td>i, 3i, 7i</td><td><b>7</b></td><td>0xE1C5</td><td>0xE1F4</td><td>—</td></tr><tr><td>0x65A5</td><td>2i, 4i, 8i, +i</td><td><b>9</b></td><td>0xE1F5</td><td>0xE1F4</td><td>0xE1F3</td></tr><tr><td>0x5AF6</td><td>2i, 4i, 8i, 16i, +i</td><td><b>17</b></td><td>0xE264</td><td>0xE262</td><td>0xE263</td></tr><tr><td>0x73D3</td><td>2i, 6i, 22i</td><td><b>22</b></td><td>0xE16A</td><td>0xE165</td><td>0xE164</td></tr><tr><td>0x68C2</td><td>2i, 4i, 8i, +i</td><td><b>9</b></td><td>0xE3FF</td><td>0xE3FD</td><td>0xE3FE</td></tr><tr><td>0x6A09</td><td>i, 3i, 7i</td><td><b>7</b></td><td>0xE31E</td><td>0xE31C</td><td>0xE31D</td></tr></table>
+<p>The first two <b>share an index</b> (0xE1F4): they are two blocks of fields of the same entity, split across two areas of memory.</p>
+<p>The chains are nested, too: <code>campo_de_entidad_17</code> prepares 2i and joins the chain halfway at <code>indexa_paso_17</code>, which carries on to 16i; <code>campo_de_entidad_9</code> joins one step earlier at <code>indexa_paso_9</code>, and the last three <code>add</code>s are shared by both. It saves bytes at the cost of having to read the whole chain to know the stride.</p>
+<h2 id="the-pushed-loop-closers">The pushed loop closers</h2>
+<p>Five entity loops do this before dispatching:</p>
+<pre><code>    ld hl,&lt;closer&gt;
+    push hl
+    ...
+    jp (hl)         ; off to whichever routine</code></pre>
+<p>The <code>ret</code> of the dispatched routine <b>does not return to the caller</b>: it falls into the closer, which bumps the index and jumps back into the loop body. All five closers have the same shape:</p>
+<pre><code>    ld hl,&lt;index&gt;
+    inc (hl)
+    ld a,(hl)
+    inc hl
+    cp (hl)
+    jp nz,&lt;body&gt;
+    ret</code></pre>
+<p>That is 87 bytes of code a static tracer cannot reach, because the address travels through the stack as if it were data. They are declared in the <code>.entries</code> with their justification.</p>
+<h2 id="drawing-two-interpreters">Drawing: two interpreters</h2>
+<p><code>dibuja_guion</code> (0x451A) reads one-byte commands:</p>
+<pre><code>C = B0 &amp; 0x7F
+  C != 0 and bit 7 set    -&gt; copy C raw bytes from the script into VRAM
+  C != 0 and bit 7 clear  -&gt; read ONE byte and repeat it C times
+  B0 == 0x00              -&gt; end
+  B0 == 0x80              -&gt; read a word with another VRAM address and carry on</code></pre>
+<p>Telling <code>0x00</code> from <code>0x80</code> is settled rather nicely: the byte is read twice, once masked with <code>0x7F</code> and once raw, and the two are compared. If they match, bit 7 was clear.</p>
+<p>The VDP auto-increments after each write, so a script paints a continuous stretch. <code>dibuja_guion_x3_tercios</code> (0x44F1) repeats the same script three times 0x800 apart: SCREEN 2&#x27;s three thirds.</p>
+<p><code>escribe_guion_de_texto</code> (0x4051) is a different language altogether: a word with the address, characters, <code>0xFE</code> to jump and <code>0xFF</code> to end. The characters are in <b>ASCII minus 0x20</b>.</p>
+<h2 id="the-sound-engine">The sound engine</h2>
+<p>The PSG player lives at 0x7A9E-0x7CE2, forty routines. Each channel is a <b>fourteen-byte</b> structure, and there are three, at 0xE010, 0xE01E and 0xE02C.</p>
+<p>PSG register 7 — the mixer — is used to switch channel C between tone and noise note by note: <code>conmuta_ruido_canal_c</code> alternates 0x9C (tones A and B with noise on C) and 0xB8 (all three tones, no noise). That is the percussion.</p>
+<p>The note byte has two halves, and the high nibble is <b>not the octave</b>: it is the index into <code>tabla_periodos_nota</code>, 0 to 9. The octave comes from a separate field of the channel structure, set by an earlier control command.</p>
+<h2 id="the-score-in-bcd">The score, in BCD</h2>
+<p><code>suma_al_marcador</code> (0x4412) keeps six digits in packed BCD. You do not have to deduce it: the <code>daa</code>s sit after every <code>add</code> and every <code>adc</code>.</p>
+<p>Same with <code>divide_entre_diez</code> (0x439A), which turns a small binary into two digits by subtracting ten at a time and counting in the high nibble.</p>
+<h2 id="what-the-cartridge-never-does">What the cartridge never does</h2>
+<p>Two code blocks are called by nobody: 0x4501 and 0x4542. The second is the counterpart of <code>prepara_escritura_vdp</code> <b>for reading</b> VRAM — it calls SETRD and takes the read port from system variable 0x0007, just as the other takes the write port from 0x0006.</p>
+<p>That it is there and unused says something about the design: <b>this cartridge never reads VRAM back</b>. It writes and forgets. All the game state lives in RAM, including a full copy of the room at 0xE700.</p>
+<footer><p><em>King's Valley</em> was published by Konami for the MSX in 1985; its catalogue number is RC-727 and it is 16 KB. All rights in the game remain with their holders. This is preservation, study and documentation work, and the cartridge image is not distributed.</p></footer></div>

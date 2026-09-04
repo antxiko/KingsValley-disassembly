@@ -1,0 +1,123 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The game — King&#x27;s Valley (Konami, 1985)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:1120px;margin:0 auto}
+.n{max-width:68ch}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance}
+a{color:var(--cyan)}
+img{image-rendering:pixelated;max-width:100%;height:auto;display:block}
+header.top{display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  padding:4rem 0 2rem;text-align:center}
+header.top img{width:min(100%,642px)}
+.claim{max-width:60ch;color:var(--suave);font-size:1.05rem}
+.claim b{color:var(--tinta);font-weight:400}
+.ficha{display:flex;flex-wrap:wrap;justify-content:center;gap:0 1.5rem;width:100%;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);
+  border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);padding:.85rem 0}
+.ficha b{color:var(--rojo);font-weight:400}
+nav{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;padding:1.25rem 0;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--suave);text-decoration:none;border-bottom:1px solid transparent}
+nav a:hover,nav a:focus{color:var(--tinta);border-bottom-color:var(--rojo)}
+nav.docs{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);
+  margin-bottom:1rem}
+section{margin-top:4.5rem;scroll-margin-top:1rem}
+section>h2{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;
+  border-left:3px solid var(--rojo);padding-left:.9rem;margin:0 0 1.5rem}
+.cifras{display:grid;gap:1px;background:var(--linea);border:1px solid var(--linea);
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.cifra{background:var(--panel);padding:1.1rem}
+.cifra b{display:block;font-size:1.7rem;color:var(--oro);font-weight:400;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.cifra span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--suave)}
+.hall{border-top:1px solid var(--linea);padding-top:1.75rem;margin-top:2.5rem}
+.hall:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.hall h3{margin:0 0 .75rem;font-size:1.15rem;color:var(--rojo)}
+.hall h4{color:var(--oro);margin:1.5rem 0 .5rem;font-size:.95rem}
+.hall p{margin:0 0 1rem}
+pre.asm{background:var(--panel);border-left:2px solid var(--verde);margin:1.25rem 0;
+  padding:1rem 1.1rem;overflow-x:auto;font-size:13px;line-height:1.6;color:var(--tinta)}
+.par{display:grid;gap:1.25rem;grid-template-columns:1fr}
+@media(min-width:820px){.par{grid-template-columns:1fr 1fr}}
+.par figure{margin:0}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+td.num{font-variant-numeric:tabular-nums;color:var(--oro)}
+.nivel{margin-top:2rem}
+.nivel h3{margin:0 0 .9rem;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase}
+.nivel em{color:var(--cyan);font-style:normal}
+.sep{color:var(--suave);margin:0 .6rem}
+.rejilla{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rejilla figure{margin:0;background:var(--panel);box-shadow:0 0 0 1px var(--linea)}
+.rejilla figcaption{display:flex;justify-content:space-between;padding:.45rem .65rem;
+  font-size:11px;color:var(--suave);border-top:1px solid var(--linea)}
+.dir{font-variant-numeric:tabular-nums;color:var(--verde)}
+footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+
+/* Aviso de trabajo en curso: tiene que verse antes que las cifras, porque un
+   100% mal leido hace mas dano que no ponerlo. */
+.aviso{background:#3a2a10;border-left:3px solid var(--oro);margin:1.5rem auto;
+  padding:1rem 1.2rem;max-width:900px;border-radius:4px}
+.aviso p{margin:0;color:var(--tinta);font-size:15px;line-height:1.65}
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;margin:1.5rem 0}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:auto;image-rendering:pixelated;
+  border:1px solid var(--linea);border-radius:3px}
+.galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html" style=color:var(--tinta)>The game</a><a href="THE-CARTRIDGE.html">The cartridge</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="IN-THE-EMULATOR.html">In the emulator</a><a href="OPEN-QUESTIONS.html">Open questions</a><a href="es/EL-JUEGO.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1 id="the-game">The game</h1>
+<p><b>King&#x27;s Valley</b> is a maze game set in pyramids: the explorer enters a chamber, collects the jewels scattered around it, and leaves through the door that opens once he has them all. Along the way there are mummies that kill him on contact, blocks that can be dug out, and traps that fall.</p>
+<p>Everything below comes from the binary, not from playing. Where something could not be confirmed, it says so.</p>
+<h2 id="fifteen-pyramids">Fifteen pyramids</h2>
+<p><code>tabla_de_habitaciones</code> (0x6D68) holds twenty-one words: the <b>first fifteen</b> are a pointer to each level&#x27;s descriptor, and the last four are reused as the base of each of the four wall pattern types.</p>
+<p>Each descriptor starts with up to four <b>band</b> bytes. A band is sixteen columns of wall, and its byte gives the type (high nibble) and the index within that type (low nibble). The list ends when the next byte has a high nibble of 3.</p>
+<p>Counted that way, the fifteen rooms split very regularly:</p>
+<ul><li>the <b>odd</b> ones (1, 3, 5, 7, 9, 11, 13, 15) have <b>one</b> band: 16 columns.</li><li>the <b>even</b> ones (2, 4, 6, 8, 10, 12, 14) have <b>three</b>: 48 columns.</li></ul>
+<p>The 48-column ones are wider than the screen, which is why the explorer&#x27;s horizontal position needs two whole bytes. See <a href="FINDINGS.html">Findings</a>.</p>
+<h2 id="how-a-room-is-drawn">How a room is drawn</h2>
+<p><code>carga_la_sala</code> (0x6A90) does not draw into VRAM: it <b>unpacks bit by bit</b> the wall pattern into a RAM buffer starting at 0xE700. Each pattern byte gives eight cells, and each bit says wall (0x12) or hole (0x00). Whatever the bands do not cover has already been filled with 0x14 by <code>borra_sala</code>.</p>
+<p>The buffer has a <b>row stride of 96 bytes</b>, not 16 or 48. That figure comes from two independent directions: from the unpacking&#x27;s <code>ld a,050h</code> plus the sixteen <code>inc de</code> the row itself already advanced (16+80=96), and from the arithmetic in <code>lee_celda_de_sala</code>, which multiplies the row by 96 with five <code>add hl,hl</code> and one addition. Two different routines — one writing the buffer, one reading it — land on the same number without copying it from each other.</p>
+<p>Only afterwards does <code>vuelca_la_vista</code> (0x5D31) copy a 22-row by 32-column window of that buffer into the name table, translating each cell with <code>traduce_celda_a_patron</code>.</p>
+<h2 id="the-cell-types">The cell types</h2>
+<p>A cell byte&#x27;s <b>high nibble</b> says what class it is. The classification comes from how each one is used, not from looking at them:</p>
+<table><tr><th>nibble</th><th>what it is</th></tr><tr><td><code>0x0x</code></td><td>hole: what you walk through and fall through</td></tr><tr><td><code>0x1x</code></td><td>floor or solid wall; what <code>hay_suelo_bajo_los_pies</code> demands</td></tr><tr><td><code>0x2x</code>, <code>0x3x</code></td><td>the only two that accept the diagonal step</td></tr><tr><td><code>0x5x</code></td><td>the block that can be dug out (subtypes 1 and 2)</td></tr></table>
+<h2 id="the-explorer">The explorer</h2>
+<p>His state lives in a record starting at 0xE134:</p>
+<table><tr><th>address</th><th>what it is</th></tr><tr><td><code>0xE134</code></td><td>state, 0 to 6; indexes <code>tabla_4c7f</code></td></tr><tr><td><code>0xE135</code></td><td>the processed controller input</td></tr><tr><td><code>0xE136</code></td><td>bit 0: which way he faces</td></tr><tr><td><code>0xE137</code></td><td>Y, in pixels</td></tr><tr><td><code>0xE138</code></td><td>X, fractional part (1/256 of a pixel)</td></tr><tr><td><code>0xE139</code></td><td>X, low byte</td></tr><tr><td><code>0xE13A</code></td><td>X, high byte</td></tr></table>
+<p>The seven states are walking, digging, pushing and the transitions between them. <code>avanza_estado_del_jugador</code> (0x4C59) steps the machine once a frame, and pushes <code>monta_sprite_del_jugador</code> as the return address so the figure gets redrawn on the way out whatever the state was.</p>
+<p>Only states 0 and 3 accept fresh input; in the others the explorer is midway through an action and the controller does not count.</p>
+<h2 id="digging">Digging</h2>
+<p>When the explorer pushes against a <code>0x5x</code> block for <b>sixteen consecutive frames</b>, <code>jugador_anda_o_cae</code> moves him to state 6 with sound effect 0x03. The counter for that run is at 0xE146 and resets the moment it is broken.</p>
+<p>The blocks that open are a separate list, seven bytes per entry, at 0xE31E. <code>marca_bloque_que_se_abre</code> (0x69C9) searches it for the one directly in front and sets bit 0 of its field 0; from there, <code>anima_bloques_que_se_abren</code> opens it in six steps, one every eight frames.</p>
+<h2 id="the-mummies">The mummies</h2>
+<p>The enemies are the <b>22-bytes-per-entry</b> list starting at 0xE16A, with the count at 0xE164. <code>mueve_los_enemigos</code> (0x6F5C) walks the list and dispatches each one by its state through <code>tabla_6f78</code>, which has nine entries.</p>
+<p>Each enemy has a <b>variant</b> (field 0x14) obtained by adding the game&#x27;s progress (0xE058) to the third byte of its descriptor and clamping to 4. The variant sets its speed: <code>enemigo_estado_3</code> uses it to pick a frame mask from the table at 0x716D, so each variant moves at a different rate.</p>
+<p>Enemies also look for a route: <code>busca_camino</code> (0x734A) scans both ways, walks down up to five rows of the column classifying what it finds, and keeps the shorter of the two.</p>
+<p><code>busca_enemigo_que_toca</code> (0x5C84) handles collisions with the player. Only enemies of type 0 to 3 and type 7 kill, they must be on the same screen, and if either of the two is in state 3 the other must be as well. When the hit counts, sound effect 0x1D plays and 0xE053 goes to zero, which is the signal that the explorer has died.</p>
+<h2 id="the-traps">The traps</h2>
+<p>There is a sixth list, nine bytes per entry, at 0xE3FF, which <code>mueve_la_trampa</code> (0x67F2) sends down the column. Its exact identity could not be confirmed; what <b>is</b> measured is that it <b>kills</b>: the probe at 0x68DA returns true when it finds patterns 0x19 or 0x1A, and then it leaves by the same door as the enemies — effect 0x1D and 0xE053 to zero.</p>
+<h2 id="the-score">The score</h2>
+<p><code>suma_al_marcador</code> (0x4412) keeps six digits in <b>packed BCD</b> at 0xE049-0xE04B, with a <code>daa</code> after every addition. On passing the threshold at 0xE052 it grants an extra round and raises the threshold by 2, also in BCD, clamping it at 0xFF — past that there are no more extra lives. Then it compares against the high score at 0xE043-0xE045 and updates it if due.</p>
+<p>All of this only counts with bit 6 of 0xE002 set, which is what tells a real game from the demo.</p>
+<h2 id="the-demo">The demo</h2>
+<p>When nobody touches anything, the cartridge plays itself. It is not an intelligence: it is a <b>recorded script</b>. <code>arranca_partida</code> puts the pointer to 0x4ACE into 0xE080, and <code>guion_de_la_demo</code> (0x4621) reads it in (input, duration) pairs until the 0xFF that ends it. The input values are exactly the same bits the controller would leave.</p>
+<p>The full menu cycle, measured in the emulator in an earlier batch, is task 0 (logo) → 1 (title) → 3 → 4 (room name) → 5 (room at rest) → 6 (the demo moves) → back to 4 → 7 (pause) → 0 again.</p>
+<footer><p><em>King's Valley</em> was published by Konami for the MSX in 1985; its catalogue number is RC-727 and it is 16 KB. All rights in the game remain with their holders. This is preservation, study and documentation work, and the cartridge image is not distributed.</p></footer></div>

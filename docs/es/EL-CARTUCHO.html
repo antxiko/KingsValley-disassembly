@@ -1,0 +1,137 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>El cartucho — King&#x27;s Valley (Konami, 1985)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:1120px;margin:0 auto}
+.n{max-width:68ch}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance}
+a{color:var(--cyan)}
+img{image-rendering:pixelated;max-width:100%;height:auto;display:block}
+header.top{display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  padding:4rem 0 2rem;text-align:center}
+header.top img{width:min(100%,642px)}
+.claim{max-width:60ch;color:var(--suave);font-size:1.05rem}
+.claim b{color:var(--tinta);font-weight:400}
+.ficha{display:flex;flex-wrap:wrap;justify-content:center;gap:0 1.5rem;width:100%;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);
+  border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);padding:.85rem 0}
+.ficha b{color:var(--rojo);font-weight:400}
+nav{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;padding:1.25rem 0;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--suave);text-decoration:none;border-bottom:1px solid transparent}
+nav a:hover,nav a:focus{color:var(--tinta);border-bottom-color:var(--rojo)}
+nav.docs{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);
+  margin-bottom:1rem}
+section{margin-top:4.5rem;scroll-margin-top:1rem}
+section>h2{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;
+  border-left:3px solid var(--rojo);padding-left:.9rem;margin:0 0 1.5rem}
+.cifras{display:grid;gap:1px;background:var(--linea);border:1px solid var(--linea);
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.cifra{background:var(--panel);padding:1.1rem}
+.cifra b{display:block;font-size:1.7rem;color:var(--oro);font-weight:400;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.cifra span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--suave)}
+.hall{border-top:1px solid var(--linea);padding-top:1.75rem;margin-top:2.5rem}
+.hall:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.hall h3{margin:0 0 .75rem;font-size:1.15rem;color:var(--rojo)}
+.hall h4{color:var(--oro);margin:1.5rem 0 .5rem;font-size:.95rem}
+.hall p{margin:0 0 1rem}
+pre.asm{background:var(--panel);border-left:2px solid var(--verde);margin:1.25rem 0;
+  padding:1rem 1.1rem;overflow-x:auto;font-size:13px;line-height:1.6;color:var(--tinta)}
+.par{display:grid;gap:1.25rem;grid-template-columns:1fr}
+@media(min-width:820px){.par{grid-template-columns:1fr 1fr}}
+.par figure{margin:0}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+td.num{font-variant-numeric:tabular-nums;color:var(--oro)}
+.nivel{margin-top:2rem}
+.nivel h3{margin:0 0 .9rem;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase}
+.nivel em{color:var(--cyan);font-style:normal}
+.sep{color:var(--suave);margin:0 .6rem}
+.rejilla{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rejilla figure{margin:0;background:var(--panel);box-shadow:0 0 0 1px var(--linea)}
+.rejilla figcaption{display:flex;justify-content:space-between;padding:.45rem .65rem;
+  font-size:11px;color:var(--suave);border-top:1px solid var(--linea)}
+.dir{font-variant-numeric:tabular-nums;color:var(--verde)}
+footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+
+/* Aviso de trabajo en curso: tiene que verse antes que las cifras, porque un
+   100% mal leido hace mas dano que no ponerlo. */
+.aviso{background:#3a2a10;border-left:3px solid var(--oro);margin:1.5rem auto;
+  padding:1rem 1.2rem;max-width:900px;border-radius:4px}
+.aviso p{margin:0;color:var(--tinta);font-size:15px;line-height:1.65}
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;margin:1.5rem 0}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:auto;image-rendering:pixelated;
+  border:1px solid var(--linea);border-radius:3px}
+.galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="EL-CARTUCHO.html" style=color:var(--tinta)>El cartucho</a><a href="EL-CODIGO.html">El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="EN-EL-EMULADOR.html">En el emulador</a><a href="PREGUNTAS-ABIERTAS.html">Preguntas abiertas</a><a href="../THE-CARTRIDGE.html" style="margin-left:auto;color:var(--oro)">English</a></nav>
+<h1 id="el-cartucho">El cartucho</h1>
+<p><b>King&#x27;s Valley</b>, Konami, 1985. Cartucho <b>RC-727</b>, 16.384 bytes, mapeado en la página 1 del MSX (0x4000-0x7FFF).</p>
+<pre><code>sha256  a8f807a0be90db6a01c43a948215a8761d1d7b92358279d6f2ce2dcfefab5d73</code></pre>
+<h2 id="la-cabecera">La cabecera</h2>
+<p>Los diez primeros bytes del volcado son:</p>
+<pre><code>41 42 6C 40 00 00 00 00 00 00</code></pre>
+<p><code>41 42</code> es la marca <code>AB</code> que la BIOS busca para saber que hay un cartucho. Los dos siguientes son la dirección de <b>INIT</b>, en little-endian: <code>6C 40</code> = <b>0x406C</b>. El resto —<code>STATEMENT</code>, <code>DEVICE</code>, <code>TEXT</code>— está a cero: el cartucho declara sólo INIT, y de ahí cuelga todo lo demás.</p>
+<h2 id="como-arranca">Cómo arranca</h2>
+<p><code>arranca_el_juego</code> (0x406C) hace cuatro cosas y ninguna más:</p>
+<ol><li>Engancha la interrupción <b>a mano</b>: escribe un 0xC3 (<code>jp</code>) en <code>H.KEYI</code> (0xFD9A) y detrás la dirección 0x401A. No usa ningún gancho de la BIOS; fabrica la instrucción byte a byte.</li><li>Pone la pila en 0xE700.</li><li>Borra 0xE000-0xE6FF con un <code>ldir</code>.</li><li>Llama a <code>prepara_pantalla</code> y <b>cae en un bucle vacío</b>.</li></ol>
+<p>A partir de ahí el juego entero corre <b>dentro de la interrupción</b>. El bucle principal no existe: es un <code>jr</code> a sí mismo. Es el mismo patrón que ya documentan los desensamblados de Sky Jaguar y de Konami&#x27;s Golf para esta misma familia de cartuchos Konami, así que no es una lectura nueva sino terminología ya validada en otros dos proyectos.</p>
+<h2 id="el-reparto-de-los-16-kb">El reparto de los 16 KB</h2>
+<pre><code>código trazado      9.803 bytes    59,83 %
+datos declarados    6.581 bytes    40,17 %
+sin explicar                0      0,00 %</code></pre>
+<p>Los 6.581 bytes de datos no son &quot;lo que sobra&quot;: son 117 bloques declarados uno a uno en <code>kingsvalley.notes</code> con una directiva <code>D</code> que dice qué son, y una <code>F</code> que dice la anchura de su estructura —una palabra, siete bytes, dos bytes por entrada—. Es la norma de la serie: cada tabla separada y con su nombre.</p>
+<h2 id="los-registros-del-vdp">Los registros del VDP</h2>
+<p><code>tabla_registros_vdp</code> (0x45C0) son ocho bytes crudos, R0 a R7:</p>
+<pre><code>02 E2 0E 7F 07 76 03 E4</code></pre>
+<ul><li><b>R0 = 0x02</b> — SCREEN 2.</li><li><b>R1 = 0xE2</b> — 16 KB, pantalla encendida, interrupción activa, y <b>sprites de 16×16</b>.</li><li><b>R2 = 0x0E</b> — tabla de nombres en 0x0E × 0x400 = <b>0x3800</b>.</li><li><b>R3 = 0x7F</b>, <b>R4 = 0x07</b> — aquí está la sorpresa; ver <a href="HALLAZGOS.html">Hallazgos</a>. En SCREEN 2 no son direcciones sino base más máscara, y lo que dicen es <b>color en 0x0000 y patrones en 0x2000</b>, al revés de lo habitual.</li><li><b>R5 = 0x76</b> — atributos de sprites en 0x3B00.</li><li><b>R6 = 0x03</b> — patrones de sprites en 0x1800.</li><li><b>R7 = 0xE4</b> — colores de borde y fondo.</li></ul>
+<h2 id="el-mapa-de-la-vram">El mapa de la VRAM</h2>
+<p>Con esos registros, los 16 KB de VRAM quedan así:</p>
+<pre><code>0x0000 - 0x17FF   tabla de COLOR      (768 tiles x 8 bytes, tres tercios)
+0x1800 - 0x1FFF   patrones de SPRITE  (64 sprites de 16x16)
+0x2000 - 0x37FF   tabla de PATRON     (768 tiles x 8 bytes, tres tercios)
+0x3800 - 0x3AFF   tabla de NOMBRES    (768 celdas, 24 filas x 32)
+0x3B00 - 0x3B7F   atributos de SPRITE (32 entradas Y/X/patron/color)</code></pre>
+<p>La tabla de nombres acaba justo en 0x3AFF y la de atributos empieza en 0x3B00, pegadas. Eso se comprobó en el emulador en una tanda anterior, volcando las dos zonas a la vez.</p>
+<h2 id="el-mapa-de-la-ram">El mapa de la RAM</h2>
+<p>El juego usa de 0xE000 a 0xF000 largos. Lo más denso:</p>
+<pre><code>0xE000  índice de la tarea activa        0xE003  contador de fotogramas
+0xE004  contador de la tarea             0xE009  entrada del fotograma
+0xE010  bloque del motor de sonido PSG   0xE049  marcador, en BCD
+0xE043  récord, en BCD                   0xE050  contador de rondas
+0xE054  número de sala                   0xE0B0  buffer de sprites (32 x 4)
+0xE134  registro del explorador          0xE14E  descriptor de los enemigos
+0xE164  cuántos enemigos                 0xE16A  los enemigos (22 B cada uno)
+0xE1C5  entidades de 7 bytes             0xE1F5  entidades de 9 bytes
+0xE264  entidades de 17 bytes            0xE2CC  otra lista de 9 bytes
+0xE31E  bloques que se abren (7 B)       0xE3FF  trampas (9 B)
+0xE700  buffer de la sala, paso de fila 96 bytes</code></pre>
+<h2 id="la-marca-oculta-de-konami">La marca oculta de Konami</h2>
+<p>Konami escondió el número de catálogo y el título en katakana al final de muchos de sus cartuchos. Lo descubrió <b>Manuel Pazos</b> (<a href="https://twitter.com/ManuelPazosMSX">@ManuelPazosMSX</a>), y hay que citarlo.</p>
+<p>Este cartucho <b>la lleva</b>, cerrando justo en 0x7FFF:</p>
+<pre><code>RC-727    O U   KE   NO   TA   NI</code></pre>
+<p><code>OU KE NO TA NI</code> es <b>王家の谷</b>, el título japonés del juego: el <em>Valle de los Reyes</em>.</p>
+<p>La búsqueda se hace con <code>tools/busca_marca_konami.py</code>, que rastrea las 16.384 posiciones, no sólo el final: hay cartuchos de esta familia donde la marca no está donde se espera, y dar un negativo por bueno sin barrer la ROM entera es la manera fácil de equivocarse.</p>
+<h2 id="los-dos-interpretes-de-guiones">Los dos intérpretes de guiones</h2>
+<p>Casi todo lo que el cartucho dibuja está comprimido como <b>guiones</b> para uno de dos intérpretes distintos. No hay que confundirlos, porque los mismos bytes leídos con el otro dan ruido:</p>
+<ul><li><b><code>dibuja_guion</code> (0x451A)</b> — el de gráficos. Un byte de comando: la cuenta son sus siete bits bajos, y el bit 7 decide entre copiar tantos bytes tal cual o repetir el siguiente byte esa cantidad de veces. <code>0x00</code> acaba y <code>0x80</code> encadena leyendo una dirección VRAM nueva.</li><li><b><code>escribe_guion_de_texto</code> (0x4051)</b> — el de texto. Empieza con una palabra que es la dirección de VRAM, siguen caracteres sueltos, <code>0xFE</code> cambia de dirección y sigue, y <code>0xFF</code> acaba.</li></ul>
+<p>Un mismo tramo de ROM puede servir a los dos: 0x47FE es un guion de gráficos que escribe letras en la tabla de nombres, y 0x480E —dieciséis bytes más adelante, dentro del mismo tramo— es un guion de texto que empieza a media altura y comparte la cola.</p>
+<footer><p><em>King's Valley</em> lo publico Konami para MSX en 1985; su numero de catalogo es RC-727 y son 16 KB. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservacion, estudio y documentacion, y la imagen del cartucho no se distribuye.</p></footer></div>

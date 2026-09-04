@@ -1,0 +1,137 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The cartridge — King&#x27;s Valley (Konami, 1985)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:1120px;margin:0 auto}
+.n{max-width:68ch}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance}
+a{color:var(--cyan)}
+img{image-rendering:pixelated;max-width:100%;height:auto;display:block}
+header.top{display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  padding:4rem 0 2rem;text-align:center}
+header.top img{width:min(100%,642px)}
+.claim{max-width:60ch;color:var(--suave);font-size:1.05rem}
+.claim b{color:var(--tinta);font-weight:400}
+.ficha{display:flex;flex-wrap:wrap;justify-content:center;gap:0 1.5rem;width:100%;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);
+  border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);padding:.85rem 0}
+.ficha b{color:var(--rojo);font-weight:400}
+nav{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;padding:1.25rem 0;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--suave);text-decoration:none;border-bottom:1px solid transparent}
+nav a:hover,nav a:focus{color:var(--tinta);border-bottom-color:var(--rojo)}
+nav.docs{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);
+  margin-bottom:1rem}
+section{margin-top:4.5rem;scroll-margin-top:1rem}
+section>h2{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;
+  border-left:3px solid var(--rojo);padding-left:.9rem;margin:0 0 1.5rem}
+.cifras{display:grid;gap:1px;background:var(--linea);border:1px solid var(--linea);
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.cifra{background:var(--panel);padding:1.1rem}
+.cifra b{display:block;font-size:1.7rem;color:var(--oro);font-weight:400;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.cifra span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--suave)}
+.hall{border-top:1px solid var(--linea);padding-top:1.75rem;margin-top:2.5rem}
+.hall:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.hall h3{margin:0 0 .75rem;font-size:1.15rem;color:var(--rojo)}
+.hall h4{color:var(--oro);margin:1.5rem 0 .5rem;font-size:.95rem}
+.hall p{margin:0 0 1rem}
+pre.asm{background:var(--panel);border-left:2px solid var(--verde);margin:1.25rem 0;
+  padding:1rem 1.1rem;overflow-x:auto;font-size:13px;line-height:1.6;color:var(--tinta)}
+.par{display:grid;gap:1.25rem;grid-template-columns:1fr}
+@media(min-width:820px){.par{grid-template-columns:1fr 1fr}}
+.par figure{margin:0}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+td.num{font-variant-numeric:tabular-nums;color:var(--oro)}
+.nivel{margin-top:2rem}
+.nivel h3{margin:0 0 .9rem;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase}
+.nivel em{color:var(--cyan);font-style:normal}
+.sep{color:var(--suave);margin:0 .6rem}
+.rejilla{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rejilla figure{margin:0;background:var(--panel);box-shadow:0 0 0 1px var(--linea)}
+.rejilla figcaption{display:flex;justify-content:space-between;padding:.45rem .65rem;
+  font-size:11px;color:var(--suave);border-top:1px solid var(--linea)}
+.dir{font-variant-numeric:tabular-nums;color:var(--verde)}
+footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+
+/* Aviso de trabajo en curso: tiene que verse antes que las cifras, porque un
+   100% mal leido hace mas dano que no ponerlo. */
+.aviso{background:#3a2a10;border-left:3px solid var(--oro);margin:1.5rem auto;
+  padding:1rem 1.2rem;max-width:900px;border-radius:4px}
+.aviso p{margin:0;color:var(--tinta);font-size:15px;line-height:1.65}
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;margin:1.5rem 0}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:auto;image-rendering:pixelated;
+  border:1px solid var(--linea);border-radius:3px}
+.galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html">The game</a><a href="THE-CARTRIDGE.html" style=color:var(--tinta)>The cartridge</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="IN-THE-EMULATOR.html">In the emulator</a><a href="OPEN-QUESTIONS.html">Open questions</a><a href="es/EL-CARTUCHO.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1 id="the-cartridge">The cartridge</h1>
+<p><b>King&#x27;s Valley</b>, Konami, 1985. Cartridge <b>RC-727</b>, 16,384 bytes, mapped into the MSX&#x27;s page 1 (0x4000-0x7FFF).</p>
+<pre><code>sha256  a8f807a0be90db6a01c43a948215a8761d1d7b92358279d6f2ce2dcfefab5d73</code></pre>
+<h2 id="the-header">The header</h2>
+<p>The first ten bytes of the dump are:</p>
+<pre><code>41 42 6C 40 00 00 00 00 00 00</code></pre>
+<p><code>41 42</code> is the <code>AB</code> marker the BIOS looks for to know a cartridge is there. The next two are the address of <b>INIT</b>, little-endian: <code>6C 40</code> = <b>0x406C</b>. The rest — <code>STATEMENT</code>, <code>DEVICE</code>, <code>TEXT</code> — is zero: the cartridge declares only INIT, and everything else hangs off that.</p>
+<h2 id="how-it-boots">How it boots</h2>
+<p><code>arranca_el_juego</code> (0x406C) does four things and no more:</p>
+<ol><li>Hooks the interrupt <b>by hand</b>: writes a 0xC3 (<code>jp</code>) into <code>H.KEYI</code> (0xFD9A) and the address 0x401A behind it. It uses no BIOS hook; it builds the instruction byte by byte.</li><li>Puts the stack at 0xE700.</li><li>Clears 0xE000-0xE6FF with an <code>ldir</code>.</li><li>Calls <code>prepara_pantalla</code> and <b>falls into an empty loop</b>.</li></ol>
+<p>From there the whole game runs <b>inside the interrupt</b>. The main loop does not exist: it is a <code>jr</code> to itself. It is the same pattern the Sky Jaguar and Konami&#x27;s Golf disassemblies already document for this same family of Konami cartridges, so it is not a fresh reading but terminology already validated in two other projects.</p>
+<h2 id="how-the-16-kb-break-down">How the 16 KB break down</h2>
+<pre><code>traced code         9,803 bytes    59.83 %
+declared data       6,581 bytes    40.17 %
+unexplained                 0       0.00 %</code></pre>
+<p>The 6,581 bytes of data are not &quot;what was left over&quot;: they are 117 blocks declared one by one in <code>kingsvalley.notes</code> with a <code>D</code> directive saying what they are, and an <code>F</code> giving the width of their structure — a word, seven bytes, two bytes per entry. That is the series&#x27; rule: every table separated and named.</p>
+<h2 id="the-vdp-registers">The VDP registers</h2>
+<p><code>tabla_registros_vdp</code> (0x45C0) is eight raw bytes, R0 to R7:</p>
+<pre><code>02 E2 0E 7F 07 76 03 E4</code></pre>
+<ul><li><b>R0 = 0x02</b> — SCREEN 2.</li><li><b>R1 = 0xE2</b> — 16 KB, display on, interrupt enabled, and <b>16×16 sprites</b>.</li><li><b>R2 = 0x0E</b> — name table at 0x0E × 0x400 = <b>0x3800</b>.</li><li><b>R3 = 0x7F</b>, <b>R4 = 0x07</b> — this is where the surprise is; see <a href="FINDINGS.html">Findings</a>. In SCREEN 2 they are not addresses but base plus mask, and what they say is <b>colour at 0x0000 and patterns at 0x2000</b>, the other way round from usual.</li><li><b>R5 = 0x76</b> — sprite attributes at 0x3B00.</li><li><b>R6 = 0x03</b> — sprite patterns at 0x1800.</li><li><b>R7 = 0xE4</b> — border and background colours.</li></ul>
+<h2 id="the-vram-map">The VRAM map</h2>
+<p>With those registers, the 16 KB of VRAM look like this:</p>
+<pre><code>0x0000 - 0x17FF   COLOUR table       (768 tiles x 8 bytes, three thirds)
+0x1800 - 0x1FFF   SPRITE patterns    (64 sprites of 16x16)
+0x2000 - 0x37FF   PATTERN table      (768 tiles x 8 bytes, three thirds)
+0x3800 - 0x3AFF   NAME table         (768 cells, 24 rows x 32)
+0x3B00 - 0x3B7F   SPRITE attributes  (32 entries Y/X/pattern/colour)</code></pre>
+<p>The name table ends exactly at 0x3AFF and the attribute table starts at 0x3B00, back to back. That was checked in the emulator in an earlier batch, by dumping both regions at once.</p>
+<h2 id="the-ram-map">The RAM map</h2>
+<p>The game uses 0xE000 up into 0xF000-something. The busiest parts:</p>
+<pre><code>0xE000  active task index               0xE003  frame counter
+0xE004  task counter                    0xE009  this frame&#x27;s input
+0xE010  PSG sound engine block          0xE049  score, in BCD
+0xE043  high score, in BCD              0xE050  round counter
+0xE054  room number                     0xE0B0  sprite buffer (32 x 4)
+0xE134  the explorer&#x27;s record           0xE14E  enemy descriptors
+0xE164  how many enemies                0xE16A  the enemies (22 B each)
+0xE1C5  7-byte entities                 0xE1F5  9-byte entities
+0xE264  17-byte entities                0xE2CC  another 9-byte list
+0xE31E  blocks that open (7 B)          0xE3FF  traps (9 B)
+0xE700  the room buffer, 96-byte row stride</code></pre>
+<h2 id="konami-s-hidden-mark">Konami&#x27;s hidden mark</h2>
+<p>Konami hid the catalogue number and the title in katakana at the end of many of its cartridges. <b>Manuel Pazos</b> (<a href="https://twitter.com/ManuelPazosMSX">@ManuelPazosMSX</a>) found it, and he should be credited.</p>
+<p>This cartridge <b>has it</b>, ending exactly at 0x7FFF:</p>
+<pre><code>RC-727    O U   KE   NO   TA   NI</code></pre>
+<p><code>OU KE NO TA NI</code> is <b>王家の谷</b>, the game&#x27;s Japanese title: the <em>Valley of the Kings</em>.</p>
+<p>The search is done with <code>tools/busca_marca_konami.py</code>, which scans all 16,384 positions, not just the end: there are cartridges in this family where the mark is not where you expect, and taking a negative on faith without sweeping the whole ROM is the easy way to get it wrong.</p>
+<h2 id="the-two-script-interpreters">The two script interpreters</h2>
+<p>Almost everything the cartridge draws is compressed as <b>scripts</b> for one of two different interpreters. They must not be confused, because the same bytes read with the other one give noise:</p>
+<ul><li><b><code>dibuja_guion</code> (0x451A)</b> — the graphics one. One command byte: the count is its low seven bits, and bit 7 decides between copying that many bytes verbatim or repeating the next byte that many times. <code>0x00</code> ends and <code>0x80</code> chains by reading a fresh VRAM address.</li><li><b><code>escribe_guion_de_texto</code> (0x4051)</b> — the text one. It starts with a word that is the VRAM address, then single characters, <code>0xFE</code> changes address and carries on, and <code>0xFF</code> ends.</li></ul>
+<p>One stretch of ROM can serve both: 0x47FE is a graphics script that writes letters into the name table, and 0x480E — sixteen bytes further on, inside the same stretch — is a text script that starts halfway and shares the tail.</p>
+<footer><p><em>King's Valley</em> was published by Konami for the MSX in 1985; its catalogue number is RC-727 and it is 16 KB. All rights in the game remain with their holders. This is preservation, study and documentation work, and the cartridge image is not distributed.</p></footer></div>

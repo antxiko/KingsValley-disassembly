@@ -1,0 +1,111 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Preguntas abiertas — King&#x27;s Valley (Konami, 1985)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:1120px;margin:0 auto}
+.n{max-width:68ch}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance}
+a{color:var(--cyan)}
+img{image-rendering:pixelated;max-width:100%;height:auto;display:block}
+header.top{display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  padding:4rem 0 2rem;text-align:center}
+header.top img{width:min(100%,642px)}
+.claim{max-width:60ch;color:var(--suave);font-size:1.05rem}
+.claim b{color:var(--tinta);font-weight:400}
+.ficha{display:flex;flex-wrap:wrap;justify-content:center;gap:0 1.5rem;width:100%;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);
+  border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);padding:.85rem 0}
+.ficha b{color:var(--rojo);font-weight:400}
+nav{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;padding:1.25rem 0;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--suave);text-decoration:none;border-bottom:1px solid transparent}
+nav a:hover,nav a:focus{color:var(--tinta);border-bottom-color:var(--rojo)}
+nav.docs{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);
+  margin-bottom:1rem}
+section{margin-top:4.5rem;scroll-margin-top:1rem}
+section>h2{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;
+  border-left:3px solid var(--rojo);padding-left:.9rem;margin:0 0 1.5rem}
+.cifras{display:grid;gap:1px;background:var(--linea);border:1px solid var(--linea);
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.cifra{background:var(--panel);padding:1.1rem}
+.cifra b{display:block;font-size:1.7rem;color:var(--oro);font-weight:400;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.cifra span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--suave)}
+.hall{border-top:1px solid var(--linea);padding-top:1.75rem;margin-top:2.5rem}
+.hall:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.hall h3{margin:0 0 .75rem;font-size:1.15rem;color:var(--rojo)}
+.hall h4{color:var(--oro);margin:1.5rem 0 .5rem;font-size:.95rem}
+.hall p{margin:0 0 1rem}
+pre.asm{background:var(--panel);border-left:2px solid var(--verde);margin:1.25rem 0;
+  padding:1rem 1.1rem;overflow-x:auto;font-size:13px;line-height:1.6;color:var(--tinta)}
+.par{display:grid;gap:1.25rem;grid-template-columns:1fr}
+@media(min-width:820px){.par{grid-template-columns:1fr 1fr}}
+.par figure{margin:0}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+td.num{font-variant-numeric:tabular-nums;color:var(--oro)}
+.nivel{margin-top:2rem}
+.nivel h3{margin:0 0 .9rem;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase}
+.nivel em{color:var(--cyan);font-style:normal}
+.sep{color:var(--suave);margin:0 .6rem}
+.rejilla{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rejilla figure{margin:0;background:var(--panel);box-shadow:0 0 0 1px var(--linea)}
+.rejilla figcaption{display:flex;justify-content:space-between;padding:.45rem .65rem;
+  font-size:11px;color:var(--suave);border-top:1px solid var(--linea)}
+.dir{font-variant-numeric:tabular-nums;color:var(--verde)}
+footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+
+/* Aviso de trabajo en curso: tiene que verse antes que las cifras, porque un
+   100% mal leido hace mas dano que no ponerlo. */
+.aviso{background:#3a2a10;border-left:3px solid var(--oro);margin:1.5rem auto;
+  padding:1rem 1.2rem;max-width:900px;border-radius:4px}
+.aviso p{margin:0;color:var(--tinta);font-size:15px;line-height:1.65}
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;margin:1.5rem 0}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:auto;image-rendering:pixelated;
+  border:1px solid var(--linea);border-radius:3px}
+.galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="EL-CARTUCHO.html">El cartucho</a><a href="EL-CODIGO.html">El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="EN-EL-EMULADOR.html">En el emulador</a><a href="PREGUNTAS-ABIERTAS.html" style=color:var(--tinta)>Preguntas abiertas</a><a href="../OPEN-QUESTIONS.html" style="margin-left:auto;color:var(--oro)">English</a></nav>
+<h1 id="preguntas-abiertas">Preguntas abiertas</h1>
+<p>El binario está explicado al 100 % y todas las rutinas tienen nombre. Eso no quiere decir que todo esté entendido. Lo que sigue es lo que queda flojo, dicho sin adornos.</p>
+<h2 id="los-sprites-de-los-enemigos">Los sprites de los enemigos</h2>
+<p>La hoja de sprites de la web sale de los <b>seis guiones</b> del cartucho cuyo primer word cae en 0x1800-0x1FFF, que es donde R6 pone la tabla de patrones de sprites. Entre los seis dejan el explorador en sus posturas, la joya y las herramientas.</p>
+<p>Pero la hoja tiene <b>filas vacías en el medio</b>, y las momias tienen que estar en alguna parte. Falta localizar el guion —o los guiones— que las carga. Puede que se carguen por sala, o desde una rutina que todavía no se ha cruzado con esa dirección.</p>
+<h2 id="que-es-exactamente-la-lista-de-0xe3ff">Qué es exactamente la lista de 0xE3FF</h2>
+<p><code>mueve_la_trampa</code> (0x67F2) recorre una lista de nueve bytes por entrada y hace bajar sus elementos por la columna del buffer de sala. Lo que <b>sí</b> está medido es que puede matar: la sonda de 0x68DA devuelve cierto con los patrones 0x19 y 0x1A, y de ahí sale por la misma puerta que los enemigos.</p>
+<p>Lo que no está cerrado es <b>qué es</b>. Podría ser una roca que cae, un dardo, o algo que no se nos ocurre. Los patrones 0x19 y 0x1A dibujados aparte lo resolverían.</p>
+<h2 id="los-tipos-de-celda-0x2x-y-0x3x">Los tipos de celda 0x2x y 0x3x</h2>
+<p>Están clasificados por <b>cómo se usan</b>: son las dos únicas clases que <code>mueve_al_jugador</code> acepta para el paso en diagonal, y <code>sube_un_escalon</code> exige además los subtipos 0x16 y 0x17. La tabla de perfil de 0x5168 (0, −1, −2, −3, −4, −3, −2, −1) dibuja una V en la Y según la X dentro de la celda.</p>
+<p>Pero <b>qué dibujo tienen</b> esas celdas —si son escalones, una rampa, una escalera— no se ha confirmado dibujándolas. La clasificación por uso es sólida; el nombre no.</p>
+<h2 id="cuanto-dura-cada-etapa-de-la-tarea-0">Cuánto dura cada etapa de la tarea 0</h2>
+<p>La cascada de la tarea 0 tiene tres niveles de contador anidados y se lee bien en los opcodes, pero <b>no se ha medido cuántos fotogramas dura cada etapa</b>: el guion de prueba del emulador pulsa teclas desde el segundo 1,5, y <code>revisa_teclado_y_salta_menu</code> se adelanta siempre a la espera natural.</p>
+<p>Para medirlo haría falta un guion que no toque nada durante el minuto largo que tarda el ciclo en cerrarse solo.</p>
+<h2 id="las-variables-de-partida-de-arrancapartida">Las variables de partida de <code>arranca_partida</code></h2>
+<p><code>arranca_partida</code> (0x4115) deja inicializadas varias variables cuyo papel exacto no se ha cerrado: 0xE062, 0xE058, 0xE055, 0xE080 y 0xE082. De 0xE080 y 0xE082 sí se sabe que son el puntero y el contador del guion de la demo. De las otras tres se sabe dónde se leen, pero no qué representan.</p>
+<h2 id="0xe130-deducido-pero-no-medido">0xE130, deducido pero no medido</h2>
+<p>Que 0xE130 sea el <b>contador de fotogramas de la pantalla en reposo</b> está deducido de cómo se usa: <code>pantalla_en_reposo</code> (0x77B7) lo incrementa una vez por fotograma y lo compara contra 0x58 y 0xE0, y al segundo plazo escribe 0xE1 en 0xE00D, que es justo lo que corta la demo. Lo confirma que 0x6718 lo pone a cero al entrar en esa pantalla.</p>
+<p>Es consistente por tres caminos, pero <b>no se ha puesto un watchpoint</b>. Se señala porque la tanda anterior tenía apuntada ahí la etiqueta «jugador2», heredada sin verificar de la plantilla de Konami&#x27;s Tennis, y esa etiqueta era falsa. Conviene no cambiar una etiqueta sin comprobar por otra.</p>
+<h2 id="las-pantallas-dibujadas-sin-comparar-contra-la-vram">Las pantallas dibujadas, sin comparar contra la VRAM</h2>
+<p>Ninguna de las pantallas nuevas —título, salas con gráficos, pantalla final— se ha comparado byte a byte contra un volcado de VRAM del emulador. Salen reconocibles, y el logotipo de Konami sale nítido, lo que ya descarta que la lectura de R3/R4 esté al revés. Pero eso es mirar, no medir, y la norma de la serie es medir.</p>
+<h2 id="el-primer-guion-de-0x47fe">El primer guion de 0x47FE</h2>
+<p>El tramo 0x47FE-0x480D es un guion de gráficos que escribe una barra decorativa y la palabra SOFTWARE. Sus <b>cinco primeros bytes</b> (0x0C, 0x7A, 0x16, 0x00, 0x88) no son letras: son índices de tile de algún adorno. No se ha mirado qué dibujan.</p>
+<h2 id="y-la-de-siempre">Y la de siempre</h2>
+<p>Nadie ha jugado una partida entera con el listado delante, comprobando sobre la marcha que cada cosa hace lo que dice el comentario. Los desensamblados anteriores de esta serie han enseñado que eso destapa errores que ni leer ni medir cazan.</p>
+<footer><p><em>King's Valley</em> lo publico Konami para MSX en 1985; su numero de catalogo es RC-727 y son 16 KB. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservacion, estudio y documentacion, y la imagen del cartucho no se distribuye.</p></footer></div>

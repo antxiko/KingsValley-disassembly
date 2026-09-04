@@ -1,0 +1,147 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>El código — King&#x27;s Valley (Konami, 1985)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:1120px;margin:0 auto}
+.n{max-width:68ch}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance}
+a{color:var(--cyan)}
+img{image-rendering:pixelated;max-width:100%;height:auto;display:block}
+header.top{display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  padding:4rem 0 2rem;text-align:center}
+header.top img{width:min(100%,642px)}
+.claim{max-width:60ch;color:var(--suave);font-size:1.05rem}
+.claim b{color:var(--tinta);font-weight:400}
+.ficha{display:flex;flex-wrap:wrap;justify-content:center;gap:0 1.5rem;width:100%;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);
+  border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);padding:.85rem 0}
+.ficha b{color:var(--rojo);font-weight:400}
+nav{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;padding:1.25rem 0;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--suave);text-decoration:none;border-bottom:1px solid transparent}
+nav a:hover,nav a:focus{color:var(--tinta);border-bottom-color:var(--rojo)}
+nav.docs{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);
+  margin-bottom:1rem}
+section{margin-top:4.5rem;scroll-margin-top:1rem}
+section>h2{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;
+  border-left:3px solid var(--rojo);padding-left:.9rem;margin:0 0 1.5rem}
+.cifras{display:grid;gap:1px;background:var(--linea);border:1px solid var(--linea);
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.cifra{background:var(--panel);padding:1.1rem}
+.cifra b{display:block;font-size:1.7rem;color:var(--oro);font-weight:400;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.cifra span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--suave)}
+.hall{border-top:1px solid var(--linea);padding-top:1.75rem;margin-top:2.5rem}
+.hall:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.hall h3{margin:0 0 .75rem;font-size:1.15rem;color:var(--rojo)}
+.hall h4{color:var(--oro);margin:1.5rem 0 .5rem;font-size:.95rem}
+.hall p{margin:0 0 1rem}
+pre.asm{background:var(--panel);border-left:2px solid var(--verde);margin:1.25rem 0;
+  padding:1rem 1.1rem;overflow-x:auto;font-size:13px;line-height:1.6;color:var(--tinta)}
+.par{display:grid;gap:1.25rem;grid-template-columns:1fr}
+@media(min-width:820px){.par{grid-template-columns:1fr 1fr}}
+.par figure{margin:0}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+td.num{font-variant-numeric:tabular-nums;color:var(--oro)}
+.nivel{margin-top:2rem}
+.nivel h3{margin:0 0 .9rem;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase}
+.nivel em{color:var(--cyan);font-style:normal}
+.sep{color:var(--suave);margin:0 .6rem}
+.rejilla{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rejilla figure{margin:0;background:var(--panel);box-shadow:0 0 0 1px var(--linea)}
+.rejilla figcaption{display:flex;justify-content:space-between;padding:.45rem .65rem;
+  font-size:11px;color:var(--suave);border-top:1px solid var(--linea)}
+.dir{font-variant-numeric:tabular-nums;color:var(--verde)}
+footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+
+/* Aviso de trabajo en curso: tiene que verse antes que las cifras, porque un
+   100% mal leido hace mas dano que no ponerlo. */
+.aviso{background:#3a2a10;border-left:3px solid var(--oro);margin:1.5rem auto;
+  padding:1rem 1.2rem;max-width:900px;border-radius:4px}
+.aviso p{margin:0;color:var(--tinta);font-size:15px;line-height:1.65}
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;margin:1.5rem 0}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:auto;image-rendering:pixelated;
+  border:1px solid var(--linea);border-radius:3px}
+.galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="EL-CARTUCHO.html">El cartucho</a><a href="EL-CODIGO.html" style=color:var(--tinta)>El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="EN-EL-EMULADOR.html">En el emulador</a><a href="PREGUNTAS-ABIERTAS.html">Preguntas abiertas</a><a href="../THE-CODE.html" style="margin-left:auto;color:var(--oro)">English</a></nav>
+<h1 id="el-codigo">El código</h1>
+<p>Las 651 rutinas del listado tienen nombre y descripción, y el <b>45,5 %</b> de las instrucciones lleva comentario propio. Esta página recorre las piezas que hay que entender para leer el resto.</p>
+<h2 id="el-despachador-de-tareas">El despachador de tareas</h2>
+<p>El juego es una máquina de estados con once tareas. <code>avanza_un_cuadro</code> (0x40A3) sube el contador de fotogramas y <code>despacha_tarea_activa</code> (0x40B6) salta a la tarea que dice el byte bajo de 0xE000.</p>
+<p>El despacho usa un truco que aparece <b>siete veces</b> en el cartucho:</p>
+<pre><code>    call L_404B
+    defw destino0, destino1, destino2, ...</code></pre>
+<p><code>L_404B</code> (0x404B) hace <code>add a,a</code>, recupera con <code>pop hl</code> la dirección de retorno —que es justo la tabla que sigue al <code>call</code>— y lee de ahí la palabra que toca. Luego <code>jp (hl)</code>. La tabla nunca se ejecuta: se <b>lee</b> desde la pila.</p>
+<p>Las siete tablas están declaradas en el <code>.nocode</code>, porque si no el trazador las lee como código y sale un listado que reensambla igual pero miente.</p>
+<h2 id="el-registro-de-posicion">El registro de posición</h2>
+<p>La pieza que abre todo el resto del juego no es una rutina de jugador: es <code>lee_celda_de_sala</code> (0x50BC), leída al revés. Recibe en HL un <b>puntero a un registro de posición</b> y usa:</p>
+<ul><li><code>(HL+0)</code> más un ajuste, desplazado tres bits: la <b>fila</b>.</li><li><code>(HL+2)</code> y <code>(HL+3)</code> como una cantidad de <b>16 bits</b>, más un desplazamiento con signo, desplazada tres bits: la <b>columna</b>.</li></ul>
+<p>De ahí sale el formato del registro del explorador, que empieza en 0xE137, y tres bytes por debajo está el estado —lo confirma <code>sondea_una_celda</code> (0x5092), que con HL en 0xE137 hace <code>dec hl</code> tres veces y lee el resultado como estado para compararlo con 2—.</p>
+<p>Ese mismo formato lo usan las entidades, los enemigos y el scratch de posiciones candidatas de 0xE149. Por eso las rutinas de sonda sirven para todos.</p>
+<h2 id="la-aritmetica-de-24-bits">La aritmética de 24 bits</h2>
+<p><code>avanza_posicion_24_bits</code> (0x73F6) es el motor de todo movimiento. Entra con HL apuntando a un par de 16 bits y DE con la velocidad, y hace:</p>
+<pre><code>    add hl,de       ; los dos bytes bajos
+    ld a,b
+    adc a,c         ; y el tercero, con el acarreo</code></pre>
+<p>Son <b>veinticuatro bits</b>: fracción, píxel bajo, píxel alto. Para el explorador esos tres bytes son 0xE138, 0xE139 y 0xE13A.</p>
+<p>El bit 0 de <code>(IX-2)</code> —que para el explorador es 0xE136, el byte de dirección— decide si la velocidad se <b>niega</b> antes de sumarla, con un complemento a dos de DE y un complemento de C. Por eso el mismo código sirve para ir a los dos lados, y por eso ese bit es &quot;hacia qué lado mira&quot;.</p>
+<h2 id="las-seis-listas-de-entidades">Las seis listas de entidades</h2>
+<p>Seis tablas paralelas, cada una con su rutina de acceso. El tamaño de cada entrada no hay que suponerlo: está en la <b>multiplicación</b>.</p>
+<table><tr><th>rutina</th><th>cadena</th><th>paso</th><th>base</th><th>índice</th><th>tope</th></tr><tr><td>0x6A12</td><td>i, 3i, 7i</td><td><b>7</b></td><td>0xE1C5</td><td>0xE1F4</td><td>—</td></tr><tr><td>0x65A5</td><td>2i, 4i, 8i, +i</td><td><b>9</b></td><td>0xE1F5</td><td>0xE1F4</td><td>0xE1F3</td></tr><tr><td>0x5AF6</td><td>2i, 4i, 8i, 16i, +i</td><td><b>17</b></td><td>0xE264</td><td>0xE262</td><td>0xE263</td></tr><tr><td>0x73D3</td><td>2i, 6i, 22i</td><td><b>22</b></td><td>0xE16A</td><td>0xE165</td><td>0xE164</td></tr><tr><td>0x68C2</td><td>2i, 4i, 8i, +i</td><td><b>9</b></td><td>0xE3FF</td><td>0xE3FD</td><td>0xE3FE</td></tr><tr><td>0x6A09</td><td>i, 3i, 7i</td><td><b>7</b></td><td>0xE31E</td><td>0xE31C</td><td>0xE31D</td></tr></table>
+<p>Las dos primeras <b>comparan el mismo índice</b> (0xE1F4): son dos bloques de campos de la misma entidad, partidos en dos zonas de memoria.</p>
+<p>Las cadenas están además encajadas: <code>campo_de_entidad_17</code> prepara 2i y entra a media cadena en <code>indexa_paso_17</code>, que sigue hasta 16i; <code>campo_de_entidad_9</code> entra un paso antes, en <code>indexa_paso_9</code>, y los tres últimos <code>add</code> los comparten las dos. Ahorra bytes a cambio de que haya que leer la cadena entera para saber el paso.</p>
+<h2 id="los-cierres-de-bucle-apilados">Los cierres de bucle apilados</h2>
+<p>Cinco recorridos de entidades hacen esto antes de despachar:</p>
+<pre><code>    ld hl,&lt;cierre&gt;
+    push hl
+    ...
+    jp (hl)         ; a la rutina que toque</code></pre>
+<p>El <code>ret</code> de la rutina despachada <b>no vuelve al llamador</b>: cae en el cierre, que sube el índice y salta otra vez al cuerpo del bucle. Los cinco cierres tienen la misma forma:</p>
+<pre><code>    ld hl,&lt;índice&gt;
+    inc (hl)
+    ld a,(hl)
+    inc hl
+    cp (hl)
+    jp nz,&lt;cuerpo&gt;
+    ret</code></pre>
+<p>Son 87 bytes de código que un trazador estático no puede alcanzar, porque la dirección viaja por la pila como si fuera un dato. Están declarados en el <code>.entries</code> con su justificación.</p>
+<h2 id="el-dibujo-dos-interpretes">El dibujo: dos intérpretes</h2>
+<p><code>dibuja_guion</code> (0x451A) lee comandos de un byte:</p>
+<pre><code>C = B0 &amp; 0x7F
+  C != 0 y bit 7 puesto  -&gt; copia C bytes crudos del guion a la VRAM
+  C != 0 y bit 7 a cero  -&gt; lee UN byte y lo repite C veces
+  B0 == 0x00             -&gt; fin
+  B0 == 0x80             -&gt; lee una palabra con otra dirección VRAM y sigue</code></pre>
+<p>La distinción entre <code>0x00</code> y <code>0x80</code> está resuelta de una manera bonita: se lee el byte dos veces, una enmascarada con <code>0x7F</code> y otra cruda, y se comparan. Si son iguales, el bit 7 estaba a cero.</p>
+<p>El VDP autoincrementa después de cada escritura, así que un guion pinta un tramo continuo. <code>dibuja_guion_x3_tercios</code> (0x44F1) repite el mismo guion tres veces a 0x800 de distancia: los tres tercios de SCREEN 2.</p>
+<p><code>escribe_guion_de_texto</code> (0x4051) es otro lenguaje distinto: palabra con la dirección, caracteres, <code>0xFE</code> para saltar y <code>0xFF</code> para acabar. Los caracteres van en <b>ASCII menos 0x20</b>.</p>
+<h2 id="el-motor-de-sonido">El motor de sonido</h2>
+<p>El reproductor PSG vive en 0x7A9E-0x7CE2, cuarenta rutinas. Cada canal es una estructura de <b>catorce bytes</b>, y hay tres, en 0xE010, 0xE01E y 0xE02C.</p>
+<p>El registro 7 del PSG —el mezclador— se usa para conmutar el canal C entre tono y ruido nota a nota: <code>conmuta_ruido_canal_c</code> alterna 0x9C (tonos A y B con ruido en C) y 0xB8 (los tres tonos sin ruido). Es la percusión.</p>
+<p>El byte de nota tiene dos mitades, y el nibble alto <b>no es la octava</b>: es el índice dentro de <code>tabla_periodos_nota</code>, de 0 a 9. La octava sale de un campo aparte de la estructura de canal, fijado por un comando de control previo.</p>
+<h2 id="el-marcador-en-bcd">El marcador, en BCD</h2>
+<p><code>suma_al_marcador</code> (0x4412) lleva seis cifras en BCD empaquetado. No hay que deducirlo: los <code>daa</code> están después de cada <code>add</code> y de cada <code>adc</code>.</p>
+<p>Lo mismo con <code>divide_entre_diez</code> (0x439A), que convierte un binario pequeño en dos cifras restando de diez en diez y contando en el nibble alto.</p>
+<h2 id="lo-que-el-cartucho-nunca-hace">Lo que el cartucho nunca hace</h2>
+<p>Dos bloques de código no los llama nadie: 0x4501 y 0x4542. El segundo es la pareja de <code>prepara_escritura_vdp</code> <b>para leer</b> de la VRAM —llama a SETRD y coge el puerto de lectura de la variable de sistema 0x0007, igual que la otra coge el de escritura de 0x0006—.</p>
+<p>Que esté ahí y no se use dice algo del diseño: <b>este cartucho nunca lee de la VRAM</b>. Escribe y se olvida. Todo el estado del juego vive en la RAM, incluido un buffer completo de la sala en 0xE700.</p>
+<footer><p><em>King's Valley</em> lo publico Konami para MSX en 1985; su numero de catalogo es RC-727 y son 16 KB. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservacion, estudio y documentacion, y la imagen del cartucho no se distribuye.</p></footer></div>

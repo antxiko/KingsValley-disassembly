@@ -1,0 +1,130 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hallazgos — King&#x27;s Valley (Konami, 1985)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:1120px;margin:0 auto}
+.n{max-width:68ch}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance}
+a{color:var(--cyan)}
+img{image-rendering:pixelated;max-width:100%;height:auto;display:block}
+header.top{display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  padding:4rem 0 2rem;text-align:center}
+header.top img{width:min(100%,642px)}
+.claim{max-width:60ch;color:var(--suave);font-size:1.05rem}
+.claim b{color:var(--tinta);font-weight:400}
+.ficha{display:flex;flex-wrap:wrap;justify-content:center;gap:0 1.5rem;width:100%;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);
+  border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);padding:.85rem 0}
+.ficha b{color:var(--rojo);font-weight:400}
+nav{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;padding:1.25rem 0;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--suave);text-decoration:none;border-bottom:1px solid transparent}
+nav a:hover,nav a:focus{color:var(--tinta);border-bottom-color:var(--rojo)}
+nav.docs{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);
+  margin-bottom:1rem}
+section{margin-top:4.5rem;scroll-margin-top:1rem}
+section>h2{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;
+  border-left:3px solid var(--rojo);padding-left:.9rem;margin:0 0 1.5rem}
+.cifras{display:grid;gap:1px;background:var(--linea);border:1px solid var(--linea);
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.cifra{background:var(--panel);padding:1.1rem}
+.cifra b{display:block;font-size:1.7rem;color:var(--oro);font-weight:400;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.cifra span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--suave)}
+.hall{border-top:1px solid var(--linea);padding-top:1.75rem;margin-top:2.5rem}
+.hall:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.hall h3{margin:0 0 .75rem;font-size:1.15rem;color:var(--rojo)}
+.hall h4{color:var(--oro);margin:1.5rem 0 .5rem;font-size:.95rem}
+.hall p{margin:0 0 1rem}
+pre.asm{background:var(--panel);border-left:2px solid var(--verde);margin:1.25rem 0;
+  padding:1rem 1.1rem;overflow-x:auto;font-size:13px;line-height:1.6;color:var(--tinta)}
+.par{display:grid;gap:1.25rem;grid-template-columns:1fr}
+@media(min-width:820px){.par{grid-template-columns:1fr 1fr}}
+.par figure{margin:0}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+td.num{font-variant-numeric:tabular-nums;color:var(--oro)}
+.nivel{margin-top:2rem}
+.nivel h3{margin:0 0 .9rem;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase}
+.nivel em{color:var(--cyan);font-style:normal}
+.sep{color:var(--suave);margin:0 .6rem}
+.rejilla{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rejilla figure{margin:0;background:var(--panel);box-shadow:0 0 0 1px var(--linea)}
+.rejilla figcaption{display:flex;justify-content:space-between;padding:.45rem .65rem;
+  font-size:11px;color:var(--suave);border-top:1px solid var(--linea)}
+.dir{font-variant-numeric:tabular-nums;color:var(--verde)}
+footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+
+/* Aviso de trabajo en curso: tiene que verse antes que las cifras, porque un
+   100% mal leido hace mas dano que no ponerlo. */
+.aviso{background:#3a2a10;border-left:3px solid var(--oro);margin:1.5rem auto;
+  padding:1rem 1.2rem;max-width:900px;border-radius:4px}
+.aviso p{margin:0;color:var(--tinta);font-size:15px;line-height:1.65}
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;margin:1.5rem 0}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:auto;image-rendering:pixelated;
+  border:1px solid var(--linea);border-radius:3px}
+.galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="EL-CARTUCHO.html">El cartucho</a><a href="EL-CODIGO.html">El código</a><a href="HALLAZGOS.html" style=color:var(--tinta)>Hallazgos</a><a href="EN-EL-EMULADOR.html">En el emulador</a><a href="PREGUNTAS-ABIERTAS.html">Preguntas abiertas</a><a href="../FINDINGS.html" style="margin-left:auto;color:var(--oro)">English</a></nav>
+<h1 id="hallazgos">Hallazgos</h1>
+<p>Lo que apareció al desmontar el cartucho, con la evidencia de cada cosa.</p>
+<h2 id="la-tabla-de-colores-va-debajo-de-la-de-patrones">La tabla de colores va debajo de la de patrones</h2>
+<p>En SCREEN 2 lo normal es poner los patrones en 0x0000 y los colores en 0x2000. Este cartucho lo hace <b>al revés</b>, y eso no se ve en ninguna dirección del código: se ve en los registros.</p>
+<p><code>tabla_registros_vdp</code> (0x45C0) vale <code>02 E2 0E 7F 07 76 03 E4</code>. En SCREEN 2 los registros 3 y 4 <b>no son una dirección</b>: son base más máscara.</p>
+<ul><li><b>R3 = 0x7F</b> — su bit 7 está a <b>cero</b>, así que la tabla de color va a 0x0000. Los siete bits bajos son una máscara, y a 0x7F no restringen nada.</li><li><b>R4 = 0x07</b> — su bit 2 está a <b>uno</b>, así que la tabla de patrones va a 0x2000. Los dos bits bajos, a 3, tampoco restringen.</li></ul>
+<p>El propio código lo confirma sin dejar sitio a la duda: <code>prepara_scroll_del_logo</code> (0x4823) dibuja el logotipo con <code>ld hl,06300h</code>, y 0x6300 enmascarado a catorce bits —que es lo que hace SETWRT— es <b>0x2300</b>, dentro de la tabla de patrones. Dos instrucciones más abajo rellena en 0x0300, dentro de la de color.</p>
+<p>Leerlo al derecho tiene un síntoma característico: las <b>formas salen bien</b> y los <b>colores salen a franjas</b>.</p>
+<h2 id="el-explorador-se-mueve-en-veinticuatro-bits">El explorador se mueve en veinticuatro bits</h2>
+<p>La X no es un byte ni dos: son tres. <code>avanza_posicion_24_bits</code> (0x73F6) suma la velocidad con <code>add hl,de</code> sobre 0xE138/0xE139 y propaga el acarreo a 0xE13A con <code>adc a,c</code>.</p>
+<p>El byte de menos peso es la <b>fracción</b>, en 1/256 de píxel, y los dos de más peso son justo los que <code>lee_celda_de_sala</code> toma como X entera para mirar una celda. Los dos usos encajan sin tener que ajustar nada.</p>
+<p>Hace falta tanta X porque <b>la sala es más ancha que la pantalla</b>: las salas pares miden 48 columnas, 384 píxeles, y no caben en un byte. Cuando el explorador sale por un lateral, <code>sale_por_el_lateral</code> (0x4BBC) manda a la tarea 9, y ésta hace <code>ld (0e139h),bc</code> con la X baja en 0xF0 o en 0x04 —el borde opuesto— y el byte alto cambiado en uno: un salto de <b>256 píxeles</b>, una pantalla entera.</p>
+<p>Tres rutinas independientes coinciden en el mismo formato sin copiarse la cifra la una de la otra.</p>
+<h2 id="ochenta-y-siete-bytes-de-codigo-que-parecian-datos">Ochenta y siete bytes de código que parecían datos</h2>
+<p>Cinco recorridos de entidades hacen <code>ld hl,&lt;cierre&gt;</code> y <code>push hl</code> antes de despachar, de modo que el <code>ret</code> de la rutina despachada <b>no vuelve al llamador</b>: cae en el cierre, que sube el índice y repite el bucle.</p>
+<p>Un trazador estático no puede seguir eso, porque la dirección viaja por la pila como si fuera un dato. Por eso 87 bytes salían como «sin identificar» en el presupuesto, y por eso ese presupuesto llevaba fallando desde el principio del proyecto.</p>
+<p>Los cinco tienen la misma forma —<code>ld hl,&lt;índice&gt;</code> / <code>inc (hl)</code> / <code>cp (hl)</code> / <code>jp nz,&lt;cuerpo&gt;</code>— y el cuerpo al que saltan es exactamente la etiqueta que los apila. Declarados en el <code>.entries</code>, el presupuesto cierra en cero.</p>
+<h2 id="dos-rutinas-que-no-llama-nadie-y-una-de-ellas-dice-algo">Dos rutinas que no llama nadie, y una de ellas dice algo</h2>
+<ul><li><b>0x4501</b>, diecinueve bytes, decodifican como otra variante de dibujar un guion en los tres tercios, ésta con el contador en el juego de registros alterno.</li><li><b>0x4542</b>, diez bytes, son la pareja de <code>prepara_escritura_vdp</code> <b>para LEER</b> de la VRAM: llama a SETRD (BIOS 0x0050) y coge el puerto de lectura de la variable de sistema 0x0007, igual que la otra coge el de escritura de 0x0006.</li></ul>
+<p>Ninguna de las dos se llama, y eso no es una impresión: los pares de bytes <b>01 45</b> y <b>42 45</b> no aparecen en ningún sitio de los 16.384, comprobado byte a byte en los dos órdenes posibles.</p>
+<p>La segunda cuenta algo del diseño del juego: <b>este cartucho nunca lee de la VRAM</b>. Escribe y se olvida. Todo el estado vive en RAM, incluido un buffer completo de la sala.</p>
+<h2 id="seis-listas-de-entidades-seis-pasos-distintos">Seis listas de entidades, seis pasos distintos</h2>
+<p>Seis tablas paralelas, cada una con su rutina de acceso, y el tamaño de cada entrada no hay que suponerlo: está en la multiplicación. 0x6A12 hace i, 3i, 7i con B llevando las potencias de dos; 0x65A5 llega a 9i; 0x5AF6 entra a media cadena y llega a 17i; 0x73D3 hace 2i, 6i, 22i.</p>
+<p>Las de paso 7 y 9 comparten índice: son dos bloques de campos de la <b>misma</b> entidad, partidos en dos zonas de memoria.</p>
+<h2 id="el-parpadeo-de-los-sprites-esta-repartido-a-proposito">El parpadeo de los sprites está repartido a propósito</h2>
+<p><code>actualiza_tabla_de_sprites</code> (0x4B75) escribe siempre los mismos cuatro sprites en la tabla de atributos, pero empezando cada fotograma por uno distinto de un anillo de cuatro entradas en 0xE0C8, que gira con un contador en 0xE061.</p>
+<p>No es un adorno. En el MSX1 sólo se ven <b>cuatro sprites por línea de barrido</b> y gana el de número más bajo; al girar el orden de escritura, el que se pierde cambia en cada fotograma y los cuatro parpadean por igual en vez de desaparecer siempre el mismo. Encaja con que 0x4364 aparque exactamente diez sprites a partir de esa misma dirección.</p>
+<h2 id="el-color-de-la-piedra-cambia-cada-cuatro-salas">El color de la piedra cambia cada cuatro salas</h2>
+<p>Las salas salían negras sobre negro al dibujarlas hasta dar con quién pone el color de los tiles de pared y suelo. No es <code>prepara_sala_nueva</code>, que carga sus patrones: es <code>columna_decorativa</code> (0x6DA0), y el guion que usa depende del <b>grupo de cuatro niveles</b> —0x6DC4 más 9 por grupo, con el grupo sacado de <code>(nivel-1) &gt;&gt; 2</code> y topado en 3—.</p>
+<p>Por eso las cuatro primeras salas son de piedra ocre y las siguientes cambian de color con el <b>mismo dibujo de ladrillo</b>: lo único que cambia son los ocho bytes de color de los tiles 0x40 a 0x44.</p>
+<h2 id="los-textos-van-en-ascii-menos-0x20">Los textos van en ASCII menos 0x20</h2>
+<p>Los rótulos no están en ASCII ni en una fuente propia con tabla de traducción: están en ASCII <b>desplazado 0x20 hacia abajo</b>. Los bytes <code>2B 2F 2E 21 2D 29</code> más 0x20 dan <code>4B 4F 4E 41 4D 49</code> = <b>KONAMI</b>, y con la misma suma salen SCORE, HI, REST, PUSH SPACE KEY, PLAY START, GAME OVER, SOFTWARE y PYRAMID. El 0x00 es el espacio y el 0x1A el símbolo de copyright.</p>
+<p>Como los caracteres se escriben tal cual en la tabla de nombres, el <b>índice de tile de cada letra es su propio código</b>.</p>
+<h2 id="un-tramo-de-rom-que-sirve-a-dos-interpretes">Un tramo de ROM que sirve a dos intérpretes</h2>
+<p>0x47FE es un guion de <b>gráficos</b> (lo llama <code>dibuja_guion_con_direccion</code>) que escribe una barra decorativa y la palabra SOFTWARE en la tabla de nombres, y acaba en el 0x00 de 0x480D.</p>
+<p>0x480E —justo detrás— es un guion de <b>texto</b> que escribe el copyright y la palabra PYRAMID. Pero 0x480E también cae <em>dentro</em> del tramo que recorrería el primero si se leyera de otra manera. Son dos lenguajes distintos compartiendo bytes contiguos, y leer uno con el intérprete del otro da ruido reconocible: al dibujar la pantalla de título salieron bandas de KKKK y NNNN hasta separarlos.</p>
+<h2 id="el-bucle-principal-no-existe">El bucle principal no existe</h2>
+<p><code>arranca_el_juego</code> (0x406C) engancha la interrupción escribiendo un <code>jp</code> a mano en 0xFD9A, borra la RAM de trabajo, prepara la pantalla y <b>cae en un bucle vacío</b>. Todo el juego corre dentro de la interrupción.</p>
+<p>No es una lectura nueva: es el mismo patrón que ya documentan los desensamblados de Sky Jaguar y Konami&#x27;s Golf para esta familia de cartuchos.</p>
+<h2 id="si-lleva-la-marca-oculta-de-konami">Sí lleva la marca oculta de Konami</h2>
+<p>Konami escondió su número de catálogo y el título en katakana al final de muchos cartuchos; lo descubrió <b>Manuel Pazos</b> (<a href="https://twitter.com/ManuelPazosMSX">@ManuelPazosMSX</a>).</p>
+<p>Éste la lleva, cerrando en 0x7FFF:</p>
+<pre><code>RC-727    O U   KE   NO   TA   NI</code></pre>
+<p><b>OU KE NO TA NI</b> es 王家の谷, el título japonés del juego: el <em>Valle de los Reyes</em>.</p>
+<footer><p><em>King's Valley</em> lo publico Konami para MSX en 1985; su numero de catalogo es RC-727 y son 16 KB. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservacion, estudio y documentacion, y la imagen del cartucho no se distribuye.</p></footer></div>

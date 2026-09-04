@@ -1,0 +1,115 @@
+# Puntos de entrada de King's Valley (Konami, RC-727, 1985). ROM de 16 KB en 0x4000.
+#
+# La BIOS lee la cabecera "AB" y llama a INIT tras inicializar la maquina.
+# En el volcado los bytes 0-9 son 41 42 6C 40 00 00 00 00 00 00: declara SOLO
+# INIT, en 0x406C.
+0x406c   # INIT, declarado en la cabecera del cartucho (bytes 2-3: 6C 40)
+
+# INIT engancha la interrupcion: pone un 0xC3 (jp) en H.KEYI (0xFD9A) y la
+# direccion 0x401A detras -`ld a,0c3h / ld (0fd9ah),a` seguido de
+# `ld hl,0401ah / ld (0fd9bh),hl` en 0x406F-0x4079-, borra 0xE000-0xE6FE con
+# un ldir y deja la pila en 0xE700. Todo el juego cuelga de la interrupcion y
+# el trazado estatico no puede llegar solo (igual que en Konami's Tennis).
+0x401a   # manejador de la interrupcion, enganchado en H.KEYI por INIT (0x4071-0x4077)
+
+# La tabla_de_tareas de 0x40ba (11 words) es el JP (HL) que z80trace no puede
+# resolver solo. Sus 11 destinos, leidos crudos de la ROM:
+0x40d0   # tarea 0 (tabla_de_tareas[0])
+0x410d   # tarea 1
+0x4115   # tarea 2
+0x429f   # tarea 3
+0x4141   # tarea 4
+0x41d5   # tarea 5
+0x41f5   # tarea 6
+0x4243   # tarea 7
+0x4266   # tarea 8
+0x427b   # tarea 9
+0x429c   # tarea 10
+
+# Segundo punto de entrada al bucle de L_4356 (0x4356): mismo cuerpo de
+# bucle, otro HL/B iniciales. Descifrado a mano en el hueco de 7 bytes entre
+# L_4356 (que acaba en `ret`, 0x4363) y L_436B: `21 c8 e0` (ld hl,0e0c8h),
+# `06 0a` (ld b,0ah), `18 f0` (jr $-16) -> el jr aterriza justo en L_435B
+# (0x435b), la etiqueta del bucle. Sin llamador estatico encontrado todavia
+# (no aparece "4364h" en ningun call/jp ya trazado); se declara porque el
+# propio contenido se descifra limpio y cierra en una etiqueta conocida, no
+# porque se haya visto quien salta aqui.
+0x4364   # segunda entrada al bucle de L_4356, aterriza en L_435B via jr
+
+# --- las SEIS tablas gemelas de tabla_de_tareas, con sus destinos SIN entrar ---
+# tabla_4c7f, tabla_57e9, tabla_652a, tabla_65f0, tabla_6dee y tabla_6f78 son
+# la MISMA mecanica de L_404B/L_6d41 que tabla_de_tareas (word[HL+A] leido tras
+# un `pop hl` que recupera su propia direccion de retorno), ya declaradas como
+# datos en el .notes/.nocode -pero sus DESTINOS nunca se anadieron aqui, asi
+# que z80trace nunca los siguio como codigo-. Confirmado con un barrido de
+# watchpoints de LECTURA en openMSX (tools/omsx_barrido_huecos.tcl, 240 s
+# emulados): el PC del emulador ejecuta DE VERDAD dentro de "sin explicar"
+# 0x4c8d-0x4f93, 0x57fd-0x5ab6, 0x6532-0x6535, 0x6602-0x672c, 0x6df6-0x6eb0,
+# 0x6f8a-0x71fc -exactamente estos destinos-, no solo los lee como datos. Los
+# valores, leidos crudos de cada tabla (ya en .notes):
+0x4c8d   # tabla_4c7f[0], llamada desde 0x4c7c
+0x4d6d   # tabla_4c7f[1]
+0x4d97   # tabla_4c7f[2]
+0x4da1   # tabla_4c7f[3]
+0x4dfc   # tabla_4c7f[4]
+0x4e56   # tabla_4c7f[5]
+0x4f93   # tabla_4c7f[6]
+
+0x57fd   # tabla_57e9[0], llamada desde 0x57e6
+0x5837   # tabla_57e9[1,2,3] (repetido)
+0x5838   # tabla_57e9[4]
+0x5894   # tabla_57e9[5]
+0x59c4   # tabla_57e9[6]
+0x59e0   # tabla_57e9[7]
+0x5a47   # tabla_57e9[8]
+0x5ab6   # tabla_57e9[9]
+
+0x6532   # tabla_652a[0,1,3] (repetido), llamada desde 0x6527
+0x6535   # tabla_652a[2]
+
+0x6602   # tabla_65f0[0], llamada desde 0x65ed
+0x661e   # tabla_65f0[1]
+0x6651   # tabla_65f0[2]
+0x667b   # tabla_65f0[3,5] (repetido)
+0x66c7   # tabla_65f0[4]
+0x661d   # tabla_65f0[6]
+0x672c   # tabla_65f0[7]
+0x6629   # tabla_65f0[8]
+
+0x6df6   # tabla_6dee[0], llamada desde 0x6deb
+0x6e56   # tabla_6dee[1]
+0x6e7d   # tabla_6dee[2]
+0x6eb0   # tabla_6dee[3]
+
+0x6f8a   # tabla_6f78[0], llamada desde 0x6f75
+0x70e6   # tabla_6f78[1]
+0x7132   # tabla_6f78[2]
+0x713c   # tabla_6f78[3]
+0x7172   # tabla_6f78[4]
+0x7190   # tabla_6f78[5]
+0x71b8   # tabla_6f78[6]
+0x71fc   # tabla_6f78[7]
+0x7255   # tabla_6f78[8]
+# CORRECCION: tabla_6f78 NO tiene 10 entradas, tiene 9. z80trace rechazo
+# 0x6f8a como semilla ("cae en zona de datos") porque el .notes de antes
+# declaraba la tabla hasta 0x6f8c (10 words); el motivo es que los DOS
+# PRIMEROS BYTES de la tarea 0 (0x6f8a: "dd 7e" = `ld a,(ix+11h)`) TAMBIEN
+# decodifican como el word 0x7edd, y eso parecia una decima entrada valida
+# (cae en 0x4000-0x8000 igual que las demas). Corregido el limite de la
+# tabla a 0x6f8a (9 entradas) en kingsvalley.notes/.nocode: liberado, 0x6f8a
+# ya se traza como codigo.
+
+# --- los CIERRES DE BUCLE apilados con push/ret (tanda 20) ---
+# Cinco recorridos de entidades usan el mismo truco: `ld hl,<cierre> / push hl`
+# antes de despachar, de modo que cuando la rutina despachada hace `ret` no
+# vuelve al llamador sino que CAE en el cierre, que sube el indice y vuelve al
+# cuerpo del bucle. z80trace no puede seguir eso -la direccion se mete en la
+# pila como dato-, asi que esos cinco cierres salian como "datos sin
+# identificar" en presupuesto.py. Son codigo, y se comprueba desensamblando
+# los bytes a mano: los cinco tienen la forma `ld hl,<indice> / inc (hl) /
+# ... / cp (hl) / jp nz,<cuerpo> / ret`, y el <cuerpo> al que saltan es
+# EXACTAMENTE la etiqueta del cuerpo del bucle que los apila.
+0x5adf   # cierre de recorre_entidades_17: lo apila 0x57de, y salta a 0x57de
+0x674e   # cierre de despacha_estado_de_la_sala: lo apila 0x65db, y salta a 0x65d8
+0x68cf   # cierre de mueve_la_trampa: lo apila 0x67fb, y salta a 0x67fb
+0x7075   # cierre de despacha_un_enemigo: lo apila 0x6f71; dibuja el sprite del enemigo y cae en 0x70ab

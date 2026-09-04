@@ -1,0 +1,28 @@
+# Zonas que NO son codigo aunque el trazado pueda entrar en ellas.
+#
+# Las siete tablas de words en linea del despachador L_404B (add a,a / pop hl
+# recupera la direccion de retorno, que es la tabla pegada justo despues del
+# call / word[HL+A] / jp (hl)): sin esta declaracion el trazador seguia
+# leyendo cada tabla como si fuera la instruccion siguiente al call, dando
+# tabla_de_tareas 100% solapada con codigo en check_datos_como_codigo.py.
+# Ya documentadas con nombre en kingsvalley.notes (D 0x40ba, 0x4c7f, 0x57e9,
+# 0x652a, 0x65f0, 0x6dee, 0x6f78).
+0x40BA 0x40D0   # tabla_de_tareas, 11 words
+0x4C7F 0x4C8D   # tabla_4c7f, 7 words, llamada L_404B desde 0x4c7c
+0x57E9 0x57FD   # tabla_57e9, 10 words, llamada L_404B desde 0x57e6
+0x652A 0x6532   # tabla_652a, 4 words, llamada L_404B desde 0x6527
+0x65F0 0x6602   # tabla_65f0, 9 words, llamada L_404B desde 0x65ed
+0x6DEE 0x6DF6   # tabla_6dee, 4 words, llamada L_404B desde 0x6deb
+0x6F78 0x6F8A   # tabla_6f78, 9 words, llamada L_404B desde 0x6f75
+
+# Fragmentos dentro del bloque de guiones de dibujo 0x5571-0x57da (guion_5571/
+# guion_5613/guion_574a/guion_57cd en kingsvalley.notes): datos que el
+# interprete de guiones (dibuja_guion) lee en tiempo real, no instrucciones.
+# Sin estas cinco zonas el trazador estatico decodificaba estos fragmentos
+# como codigo (medido comparando el trazado con y sin ellas, no son huecos
+# alineados a ojo: son exactamente los tramos que cambiaban).
+0x5571 0x5663
+0x566F 0x569C
+0x569E 0x56A0
+0x56C0 0x5776
+0x578C 0x57DA

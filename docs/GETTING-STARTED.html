@@ -1,0 +1,111 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Getting started — King&#x27;s Valley (Konami, 1985)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:1120px;margin:0 auto}
+.n{max-width:68ch}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance}
+a{color:var(--cyan)}
+img{image-rendering:pixelated;max-width:100%;height:auto;display:block}
+header.top{display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  padding:4rem 0 2rem;text-align:center}
+header.top img{width:min(100%,642px)}
+.claim{max-width:60ch;color:var(--suave);font-size:1.05rem}
+.claim b{color:var(--tinta);font-weight:400}
+.ficha{display:flex;flex-wrap:wrap;justify-content:center;gap:0 1.5rem;width:100%;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);
+  border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);padding:.85rem 0}
+.ficha b{color:var(--rojo);font-weight:400}
+nav{display:flex;flex-wrap:wrap;gap:1.25rem;justify-content:center;padding:1.25rem 0;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--suave);text-decoration:none;border-bottom:1px solid transparent}
+nav a:hover,nav a:focus{color:var(--tinta);border-bottom-color:var(--rojo)}
+nav.docs{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);
+  margin-bottom:1rem}
+section{margin-top:4.5rem;scroll-margin-top:1rem}
+section>h2{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;
+  border-left:3px solid var(--rojo);padding-left:.9rem;margin:0 0 1.5rem}
+.cifras{display:grid;gap:1px;background:var(--linea);border:1px solid var(--linea);
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.cifra{background:var(--panel);padding:1.1rem}
+.cifra b{display:block;font-size:1.7rem;color:var(--oro);font-weight:400;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.cifra span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--suave)}
+.hall{border-top:1px solid var(--linea);padding-top:1.75rem;margin-top:2.5rem}
+.hall:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.hall h3{margin:0 0 .75rem;font-size:1.15rem;color:var(--rojo)}
+.hall h4{color:var(--oro);margin:1.5rem 0 .5rem;font-size:.95rem}
+.hall p{margin:0 0 1rem}
+pre.asm{background:var(--panel);border-left:2px solid var(--verde);margin:1.25rem 0;
+  padding:1rem 1.1rem;overflow-x:auto;font-size:13px;line-height:1.6;color:var(--tinta)}
+.par{display:grid;gap:1.25rem;grid-template-columns:1fr}
+@media(min-width:820px){.par{grid-template-columns:1fr 1fr}}
+.par figure{margin:0}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+td.num{font-variant-numeric:tabular-nums;color:var(--oro)}
+.nivel{margin-top:2rem}
+.nivel h3{margin:0 0 .9rem;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase}
+.nivel em{color:var(--cyan);font-style:normal}
+.sep{color:var(--suave);margin:0 .6rem}
+.rejilla{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rejilla figure{margin:0;background:var(--panel);box-shadow:0 0 0 1px var(--linea)}
+.rejilla figcaption{display:flex;justify-content:space-between;padding:.45rem .65rem;
+  font-size:11px;color:var(--suave);border-top:1px solid var(--linea)}
+.dir{font-variant-numeric:tabular-nums;color:var(--verde)}
+footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+
+/* Aviso de trabajo en curso: tiene que verse antes que las cifras, porque un
+   100% mal leido hace mas dano que no ponerlo. */
+.aviso{background:#3a2a10;border-left:3px solid var(--oro);margin:1.5rem auto;
+  padding:1rem 1.2rem;max-width:900px;border-radius:4px}
+.aviso p{margin:0;color:var(--tinta);font-size:15px;line-height:1.65}
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1.5rem;margin:1.5rem 0}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:auto;image-rendering:pixelated;
+  border:1px solid var(--linea);border-radius:3px}
+.galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
+audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html" style=color:var(--tinta)>Start</a><a href="THE-GAME.html">The game</a><a href="THE-CARTRIDGE.html">The cartridge</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="IN-THE-EMULATOR.html">In the emulator</a><a href="OPEN-QUESTIONS.html">Open questions</a><a href="es/EMPEZAR.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1 id="getting-started">Getting started</h1>
+<p>This repository holds the commented disassembly of <b>King&#x27;s Valley</b> (Konami, 1985), the 16 KB <b>RC-727</b> cartridge for the MSX1.</p>
+<p>The ROM is <b>not distributed here</b>. You need to put it in the root of the repository as <code>kingsvalley.rom</code>. To check it is the same one:</p>
+<pre><code>shasum -a 256 kingsvalley.rom
+a8f807a0be90db6a01c43a948215a8761d1d7b92358279d6f2ce2dcfefab5d73</code></pre>
+<h2 id="what-make-does">What <code>make</code> does</h2>
+<pre><code>make listado    builds src/kingsvalley.asm from the trace and the notes
+make verify     reassembles the listing and compares it to the ROM, byte for byte
+make sanity     the four checks reassembling does NOT cover
+make densidad   counts how much of the listing is commented
+make imagenes   draws the declared graphic blocks, so you can look at them
+make web        builds the bilingual site in docs/</code></pre>
+<p>Plain <code>make</code> runs <code>listado</code>, <code>verify</code>, <code>sanity</code> and <code>test</code>.</p>
+<h2 id="why-verify-is-the-test-that-matters">Why <code>verify</code> is the test that matters</h2>
+<p>A disassembly can be written many ways, and almost all of them are wrong in some way that does not show. The one test that admits no argument is to reassemble the listing and check that <b>exactly the same ROM</b> comes back: the 16,384 bytes, in the same order, with the same sha256.</p>
+<p>That is what <code>make verify</code> does, and it has been run after every batch of work. If it ever fails, the listing is wrong, however nicely it reads.</p>
+<h2 id="what-reassembling-does-not-cover">What reassembling does not cover</h2>
+<p>Identical bytes say nothing about whether we have <b>understood</b> them. A data block read as if it were code produces the same binary and a lie in the listing. So <code>make sanity</code> runs four separate checks:</p>
+<ul><li><b><code>check_trace.py</code></b>: nothing declared as data in the <code>.nocode</code> may have come out traced as code.</li><li><b><code>check_datos_como_codigo.py</code></b>: cross-checks the 110 declared data regions against the real trace.</li><li><b><code>check_entradas.py</code></b>: no entry point may land inside a data region.</li><li><b><code>presupuesto.py</code></b>: not one byte of the cartridge left unassigned. This is the demanding one, and today it passes: <b>0 bytes unexplained</b>.</li></ul>
+<h2 id="the-files-edited-by-hand">The files edited by hand</h2>
+<p>Only three, all in <code>src/</code>:</p>
+<ul><li><b><code>kingsvalley.entries</code></b> — the entry points static tracing cannot work out on its own: the header&#x27;s <code>INIT</code>, the interrupt hook, the eleven destinations of the task table, and the loop closers the cartridge pushes onto the stack. Each with its justification written beside it.</li><li><b><code>kingsvalley.nocode</code></b> — the regions the tracer must not keep reading as code, with the reason for each.</li><li><b><code>kingsvalley.notes</code></b> — the <code>L</code> directives (a routine&#x27;s name and description), <code>C</code> (a comment on one line) and <code>D</code>/<code>F</code> (a data block, its name and the width of its structure). It is the big file, and where everything understood actually lives.</li></ul>
+<p><code>src/kingsvalley.asm</code> is <b>generated</b>: never edited by hand.</p>
+<h2 id="the-pictures">The pictures</h2>
+<p>Not one picture on the site is an emulator capture. They are all drawn by <code>tools/pantallas.py</code> from the bytes of the ROM, by running in Python the two script interpreters the Z80 runs. See <a href="THE-CODE.html">The code</a> for how they work.</p>
+<footer><p><em>King's Valley</em> was published by Konami for the MSX in 1985; its catalogue number is RC-727 and it is 16 KB. All rights in the game remain with their holders. This is preservation, study and documentation work, and the cartridge image is not distributed.</p></footer></div>
