@@ -4,40 +4,23 @@ El binario está explicado al 100 % y todas las rutinas tienen nombre. Eso no
 quiere decir que todo esté entendido. Lo que sigue es lo que queda flojo, dicho
 sin adornos.
 
-## Los sprites de los enemigos
+## Cuál de las dos compilaciones jugó la gente
 
-La hoja de sprites de la web sale de los **seis guiones** del cartucho cuyo
-primer word cae en 0x1800-0x1FFF, que es donde R6 pone la tabla de patrones de
-sprites. Entre los seis dejan el explorador en sus posturas, la joya y las
-herramientas.
+Este cartucho es la **versión 1**, y la versión 2 le arregla cuatro fallos.
+Cuál de las dos se vendió dónde, y en qué orden, no es algo que el binario
+pueda contestar —y la norma de esta serie es no deducir una historia editorial
+de un binario—. Un volcado de la versión 2 al lado de éste permitiría
+compararlas instrucción a instrucción, como se hizo con otro cartucho de esta
+serie que también tiene dos compilaciones.
 
-Pero la hoja tiene **filas vacías en el medio**, y las momias tienen que estar
-en alguna parte. Falta localizar el guion —o los guiones— que las carga. Puede
-que se carguen por sala, o desde una rutina que todavía no se ha cruzado con
-esa dirección.
+## Para qué eran las cuatro entradas muertas de la tabla de tiles
 
-## Qué es exactamente la lista de 0xE3FF
+La tabla de 0x5D68 tiene, en esta versión, cuatro punteros para las clases de
+celda `0x9x`, `0xAx`, `0xBx` y `0xCx` que ningún descriptor de nivel llega a
+producir. Apuntan a los patrones 0x4E, 0x4F y 0x50 y a dos bytes a cero. La
+versión 2 los quita del todo.
 
-`mueve_la_trampa` (0x67F2) recorre una lista de nueve bytes por entrada y hace
-bajar sus elementos por la columna del buffer de sala. Lo que **sí** está
-medido es que puede matar: la sonda de 0x68DA devuelve cierto con los patrones
-0x19 y 0x1A, y de ahí sale por la misma puerta que los enemigos.
-
-Lo que no está cerrado es **qué es**. Podría ser una roca que cae, un dardo, o
-algo que no se nos ocurre. Los patrones 0x19 y 0x1A dibujados aparte lo
-resolverían.
-
-## Los tipos de celda 0x2x y 0x3x
-
-Están clasificados por **cómo se usan**: son las dos únicas clases que
-`mueve_al_jugador` acepta para el paso en diagonal, y `sube_un_escalon` exige
-además los subtipos 0x16 y 0x17. La tabla de perfil de 0x5168
-(0, −1, −2, −3, −4, −3, −2, −1) dibuja una V en la Y según la X dentro de la
-celda.
-
-Pero **qué dibujo tienen** esas celdas —si son escalones, una rampa, una
-escalera— no se ha confirmado dibujándolas. La clasificación por uso es sólida;
-el nombre no.
+Algo usó esas clases en algún momento del desarrollo. Qué, no lo sabemos.
 
 ## Cuánto dura cada etapa de la tarea 0
 
@@ -69,13 +52,12 @@ señala porque la tanda anterior tenía apuntada ahí la etiqueta «jugador2»,
 heredada sin verificar de la plantilla de Konami's Tennis, y esa etiqueta era
 falsa. Conviene no cambiar una etiqueta sin comprobar por otra.
 
-## Las pantallas dibujadas, sin comparar contra la VRAM
+## El sonido
 
-Ninguna de las pantallas nuevas —título, salas con gráficos, pantalla final— se
-ha comparado byte a byte contra un volcado de VRAM del emulador. Salen
-reconocibles, y el logotipo de Konami sale nítido, lo que ya descarta que la
-lectura de R3/R4 esté al revés. Pero eso es mirar, no medir, y la norma de la
-serie es medir.
+Las tablas de música y efectos están localizadas y con nombre —`SFX_Momia`,
+`MUS_Ingame`, `MUS_GameOver` y una docena más— pero el formato del propio
+reproductor no se ha desmontado, y nada se ha comparado contra los registros
+del PSG de una máquina en marcha.
 
 ## El primer guion de 0x47FE
 

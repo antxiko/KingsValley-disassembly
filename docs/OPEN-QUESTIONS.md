@@ -3,40 +3,30 @@
 The binary is 100 % explained and every routine has a name. That does not mean
 everything is understood. What follows is what is still loose, said plainly.
 
-## The enemy sprites
+Four questions that used to be on this page are now closed, and the answers
+are on the other pages: **the mummies' sprites** (they are at 0x1940, and the
+mirrored ones are made at run time, not stored); **what cell types 0x2x and
+0x3x look like** (ladder rungs); **what the 0xE3FF list is** (the trap walls);
+and **whether the drawn screens match the machine** (they do — name table,
+patterns, colour and sprites, zero differences across the fifteen pyramids).
 
-The sprite sheet on the site comes from the cartridge's **six scripts** whose
-first word falls in 0x1800-0x1FFF, which is where R6 puts the sprite pattern
-table. Between them they leave the explorer in his poses, the jewel and the
-tools.
+## Which of the two builds people actually played
 
-But the sheet has **empty rows in the middle**, and the mummies have to be
-somewhere. The script — or scripts — that load them is still to be located. It
-may be that they are loaded per room, or from a routine that has not yet been
-crossed with that address.
+This cartridge is **version 1**, and version 2 fixes four bugs in it. Which of
+the two shipped where, and in what order, is not something the binary can
+answer — and this series' rule is not to deduce a release history from a
+binary. A dump of version 2 next to this one would let the two be compared
+instruction by instruction, the way another cartridge in this series with two
+builds was handled.
 
-## What exactly the 0xE3FF list is
+## What the four dead entries in the tile table were for
 
-`mueve_la_trampa` (0x67F2) walks a list of nine bytes per entry and sends its
-elements down the room buffer's column. What **is** measured is that it can
-kill: the probe at 0x68DA returns true for patterns 0x19 and 0x1A, and from
-there it leaves by the same door as the enemies.
+The table at 0x5D68 has, in this version, four pointers for cell classes
+`0x9x`, `0xAx`, `0xBx` and `0xCx` that no level descriptor ever produces. They
+point at patterns 0x4E, 0x4F and 0x50 and at two zero bytes. Version 2 deletes
+them outright.
 
-What is not settled is **what it is**. It could be a falling rock, a dart, or
-something that has not occurred to us. Drawing patterns 0x19 and 0x1A on their
-own would settle it.
-
-## Cell types 0x2x and 0x3x
-
-They are classified by **how they are used**: they are the only two classes
-`mueve_al_jugador` accepts for the diagonal step, and `sube_un_escalon`
-additionally demands subtypes 0x16 and 0x17. The profile table at 0x5168
-(0, −1, −2, −3, −4, −3, −2, −1) draws a V in Y according to the X within the
-cell.
-
-But **what they look like** — whether they are steps, a ramp, a ladder — has
-not been confirmed by drawing them. The classification by use is solid; the
-name is not.
+Something used those classes at some point in development. What, we do not know.
 
 ## How long each stage of task 0 lasts
 
@@ -68,13 +58,12 @@ flagged because the previous batch had the label "jugador2" recorded there,
 inherited unverified from the Konami's Tennis template, and that label was
 false. It is worth not replacing one unchecked label with another.
 
-## The drawn screens, not compared against VRAM
+## Sound
 
-None of the new screens — title, rooms with graphics, final screen — has been
-compared byte for byte against an emulator VRAM dump. They come out
-recognisable, and the Konami wordmark comes out crisp, which already rules out
-the R3/R4 reading being inverted. But that is looking, not measuring, and the
-series' rule is to measure.
+The music and effect tables are located and named — `SFX_Momia`, `MUS_Ingame`,
+`MUS_GameOver` and a dozen more — but the driver's own format has not been
+taken apart, and nothing has been compared against the PSG registers of a
+running machine.
 
 ## The first script at 0x47FE
 

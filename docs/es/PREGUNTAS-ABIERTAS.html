@@ -85,15 +85,11 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 <div class="w"><nav class="top"><a href="index.html">Portada</a><a href="EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="EL-CARTUCHO.html">El cartucho</a><a href="EL-CODIGO.html">El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="EN-EL-EMULADOR.html">En el emulador</a><a href="PREGUNTAS-ABIERTAS.html" style=color:var(--tinta)>Preguntas abiertas</a><a href="../OPEN-QUESTIONS.html" style="margin-left:auto;color:var(--oro)">English</a></nav>
 <h1 id="preguntas-abiertas">Preguntas abiertas</h1>
 <p>El binario está explicado al 100 % y todas las rutinas tienen nombre. Eso no quiere decir que todo esté entendido. Lo que sigue es lo que queda flojo, dicho sin adornos.</p>
-<h2 id="los-sprites-de-los-enemigos">Los sprites de los enemigos</h2>
-<p>La hoja de sprites de la web sale de los <b>seis guiones</b> del cartucho cuyo primer word cae en 0x1800-0x1FFF, que es donde R6 pone la tabla de patrones de sprites. Entre los seis dejan el explorador en sus posturas, la joya y las herramientas.</p>
-<p>Pero la hoja tiene <b>filas vacías en el medio</b>, y las momias tienen que estar en alguna parte. Falta localizar el guion —o los guiones— que las carga. Puede que se carguen por sala, o desde una rutina que todavía no se ha cruzado con esa dirección.</p>
-<h2 id="que-es-exactamente-la-lista-de-0xe3ff">Qué es exactamente la lista de 0xE3FF</h2>
-<p><code>mueve_la_trampa</code> (0x67F2) recorre una lista de nueve bytes por entrada y hace bajar sus elementos por la columna del buffer de sala. Lo que <b>sí</b> está medido es que puede matar: la sonda de 0x68DA devuelve cierto con los patrones 0x19 y 0x1A, y de ahí sale por la misma puerta que los enemigos.</p>
-<p>Lo que no está cerrado es <b>qué es</b>. Podría ser una roca que cae, un dardo, o algo que no se nos ocurre. Los patrones 0x19 y 0x1A dibujados aparte lo resolverían.</p>
-<h2 id="los-tipos-de-celda-0x2x-y-0x3x">Los tipos de celda 0x2x y 0x3x</h2>
-<p>Están clasificados por <b>cómo se usan</b>: son las dos únicas clases que <code>mueve_al_jugador</code> acepta para el paso en diagonal, y <code>sube_un_escalon</code> exige además los subtipos 0x16 y 0x17. La tabla de perfil de 0x5168 (0, −1, −2, −3, −4, −3, −2, −1) dibuja una V en la Y según la X dentro de la celda.</p>
-<p>Pero <b>qué dibujo tienen</b> esas celdas —si son escalones, una rampa, una escalera— no se ha confirmado dibujándolas. La clasificación por uso es sólida; el nombre no.</p>
+<h2 id="cual-de-las-dos-compilaciones-jugo-la-gente">Cuál de las dos compilaciones jugó la gente</h2>
+<p>Este cartucho es la <b>versión 1</b>, y la versión 2 le arregla cuatro fallos. Cuál de las dos se vendió dónde, y en qué orden, no es algo que el binario pueda contestar —y la norma de esta serie es no deducir una historia editorial de un binario—. Un volcado de la versión 2 al lado de éste permitiría compararlas instrucción a instrucción, como se hizo con otro cartucho de esta serie que también tiene dos compilaciones.</p>
+<h2 id="para-que-eran-las-cuatro-entradas-muertas-de-la-tabla-de-tiles">Para qué eran las cuatro entradas muertas de la tabla de tiles</h2>
+<p>La tabla de 0x5D68 tiene, en esta versión, cuatro punteros para las clases de celda <code>0x9x</code>, <code>0xAx</code>, <code>0xBx</code> y <code>0xCx</code> que ningún descriptor de nivel llega a producir. Apuntan a los patrones 0x4E, 0x4F y 0x50 y a dos bytes a cero. La versión 2 los quita del todo.</p>
+<p>Algo usó esas clases en algún momento del desarrollo. Qué, no lo sabemos.</p>
 <h2 id="cuanto-dura-cada-etapa-de-la-tarea-0">Cuánto dura cada etapa de la tarea 0</h2>
 <p>La cascada de la tarea 0 tiene tres niveles de contador anidados y se lee bien en los opcodes, pero <b>no se ha medido cuántos fotogramas dura cada etapa</b>: el guion de prueba del emulador pulsa teclas desde el segundo 1,5, y <code>revisa_teclado_y_salta_menu</code> se adelanta siempre a la espera natural.</p>
 <p>Para medirlo haría falta un guion que no toque nada durante el minuto largo que tarda el ciclo en cerrarse solo.</p>
@@ -102,8 +98,8 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 <h2 id="0xe130-deducido-pero-no-medido">0xE130, deducido pero no medido</h2>
 <p>Que 0xE130 sea el <b>contador de fotogramas de la pantalla en reposo</b> está deducido de cómo se usa: <code>pantalla_en_reposo</code> (0x77B7) lo incrementa una vez por fotograma y lo compara contra 0x58 y 0xE0, y al segundo plazo escribe 0xE1 en 0xE00D, que es justo lo que corta la demo. Lo confirma que 0x6718 lo pone a cero al entrar en esa pantalla.</p>
 <p>Es consistente por tres caminos, pero <b>no se ha puesto un watchpoint</b>. Se señala porque la tanda anterior tenía apuntada ahí la etiqueta «jugador2», heredada sin verificar de la plantilla de Konami&#x27;s Tennis, y esa etiqueta era falsa. Conviene no cambiar una etiqueta sin comprobar por otra.</p>
-<h2 id="las-pantallas-dibujadas-sin-comparar-contra-la-vram">Las pantallas dibujadas, sin comparar contra la VRAM</h2>
-<p>Ninguna de las pantallas nuevas —título, salas con gráficos, pantalla final— se ha comparado byte a byte contra un volcado de VRAM del emulador. Salen reconocibles, y el logotipo de Konami sale nítido, lo que ya descarta que la lectura de R3/R4 esté al revés. Pero eso es mirar, no medir, y la norma de la serie es medir.</p>
+<h2 id="el-sonido">El sonido</h2>
+<p>Las tablas de música y efectos están localizadas y con nombre —<code>SFX_Momia</code>, <code>MUS_Ingame</code>, <code>MUS_GameOver</code> y una docena más— pero el formato del propio reproductor no se ha desmontado, y nada se ha comparado contra los registros del PSG de una máquina en marcha.</p>
 <h2 id="el-primer-guion-de-0x47fe">El primer guion de 0x47FE</h2>
 <p>El tramo 0x47FE-0x480D es un guion de gráficos que escribe una barra decorativa y la palabra SOFTWARE. Sus <b>cinco primeros bytes</b> (0x0C, 0x7A, 0x16, 0x00, 0x88) no son letras: son índices de tile de algún adorno. No se ha mirado qué dibujan.</p>
 <h2 id="y-la-de-siempre">Y la de siempre</h2>

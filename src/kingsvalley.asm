@@ -66,10 +66,10 @@ interrupcion_rearma:		; Segunda lectura de S#0: si el VDP ya tiene OTRA interrup
 	call m,tick_sonido		;4039   ; bit 7 de S#0 cae en el flag de signo: call m dispara solo si ya hay otra F pendiente
 	ei			;403c
 	ret			;403d
-intento_de_parche_muerto:		; Copia el byte de 0x404c (0xe1, "pop hl") sobre el primer byte de la tarea 1 (0x40e4) y un 0xc9 (ret) detras -en teoria la neutraliza-, pero 0x40e4 cae en ROM: la escritura no tiene ningun efecto, medido en caliente (tools/omsx_check_4644.tcl, 92 ejecuciones, el byte nunca cambia)
-	ld hl,040e4h		;403e   ; HL=0x40e4: el destino cae en ROM, de solo lectura
-	ld a,(l404ch)		;4041   ; A = byte de 0x404c (0xe1, "pop hl", el propio opcode de despacha_tabla_siguiente)
-	ld (hl),a			;4044   ; escribe A en 0x40e4 y 0xc9 en 0x40e5: intento de parche que la ROM ignora en silencio
+proteccion_anticopia_tarea_1:		; Proteccion anticopia: machaca el primer byte de la tarea 1 (0x40e4) con el 0xe1 ("pop hl") que hay en 0x404c y le pone un 0xc9 (ret) detras. Corriendo desde ROM la escritura no hace nada -medido en caliente, tools/omsx_check_4644.tcl, 92 ejecuciones y el byte nunca cambia-; corriendo desde RAM revienta el titulo. Es ReadKeys_AC en el desensamblado de Manuel Pazos
+	ld hl,040e4h		;403e   ; HL=0x40e4: el arranque de la tarea 1, que en un cartucho de verdad es ROM y no se deja escribir
+	ld a,(l404ch)		;4041   ; A = byte de 0x404c (0xe1, "pop hl", el propio opcode de despacha_tabla_siguiente): la trampa se sirve de un byte que ya estaba
+	ld (hl),a			;4044   ; escribe A en 0x40e4 y 0xc9 en 0x40e5: en ROM es un no-op silencioso, en RAM deja la tarea 1 en "pop hl / ret"
 	inc hl			;4045
 	ld (hl),0c9h		;4046
 	jp L_45E8		;4048
@@ -126,7 +126,7 @@ arranca_el_juego:		; INIT del cartucho: apaga interrupciones, modo IM1, fabrica 
 bucle_muerto:		; El programa "principal" no hace nada mas: todo el juego pasa a vivir dentro de la interrupcion (mismo patron que BUCLE_MUERTO en skyjaguar.notes)
 	jr bucle_muerto		;409a
 L_409C:
-	ld (043c0h),de		;409c   ; guarda DE como direccion de arranque del relleno de VRAM que sigue (usado por la rutina de escritura rapida por puerto, sin explorar en detalle todavia) y salta directo a ella
+	ld (043c0h),de		;409c   ; LA SEGUNDA PROTECCION ANTICOPIA: escribe DE encima de 0x43c0, que no es un dato sino el OPERANDO del `jp nc,cierra_aviso_titulo` de 0x43bf. En ROM no pasa nada; desde RAM el dibujo del titulo salta a donde diga DE. Es VRAM_writeAC en el desensamblado de Manuel Pazos
 	jp rellena_vram		;40a0
 avanza_un_cuadro:		; Lo que interrupcion llama cada VBLANK: sube el contador de fotogramas (0xe003) y, si 0xe002 no tiene el bit 6 puesto, pasa antes por 0x4644 (llamada condicional fabricada con push hl+ret, confirmado: 0x4644 acaba en ret) antes de despachar la tarea activa
 	ld hl,0e003h		;40a3   ; 0xe003: contador de fotogramas, +1 cada interrupcion; el motor de sonido lo usa como compuerta de "cada 8 cuadros" (and 007h/ret nz) en varios sitios
@@ -165,7 +165,7 @@ tarea_0_logo_konami:		; Tarea activa nada mas arrancar (indice 0 de tabla_de_tar
 	call dibuja_guion_con_direccion		;40de
 	xor a			;40e1
 	jr guarda_contador_de_etapa		;40e2   ; fin de esta etapa: solo suma 1 al "orden" (0xe001), NO cambia de tarea
-tarea_0_borra_y_r7:		; Etapa intermedia de la cascada: se alcanza cuando el subcontador de la etapa anterior llega a 0. Es tambien el destino del parche muerto de la tanda 5 (intento_de_parche_muerto intenta neutralizar el PRIMER byte de aqui, sin efecto porque cae en ROM)
+tarea_0_borra_y_r7:		; Etapa intermedia de la cascada: se alcanza cuando el subcontador de la etapa anterior llega a 0. Es tambien la VICTIMA de la proteccion anticopia de 0x403e, que intenta machacar el PRIMER byte de aqui: en un cartucho de verdad esto es ROM y la escritura no cuela, en una copia en RAM si
 	djnz tarea_0_dibuja_o_avanza		;40e4   ; igual que arriba: lo normal es caer en la etapa "en marcha" real (tarea_0_dibuja_o_avanza)
 	ld hl,0e004h		;40e6
 	dec (hl)			;40e9   ; la vez que TAMBIEN se agota: contador propio de esta etapa (0xe004)
@@ -285,7 +285,7 @@ tarea_4_espera:		; La rama "esperando" de la tarea 4: cuenta dos cascadas de fot
 	dec (hl)			;41be
 	ret nz			;41bf
 	call L_4407		;41c0   ; con las dos agotadas: dibuja el nombre de sala (L_4407, sin explorar el detalle esta tanda) y algo mas (L_773c, sin explorar)
-	call monta_pantalla_de_sala		;41c3
+	call monta_el_mapa_del_valle		;41c3
 	jr L_41A6		;41c6   ; marca (0xe053)=1 y avanza a la tarea 5 (avanza_siguiente_tarea)
 tarea_4_cuenta_ronda:		; El otro paso de la cascada de la tarea 4: espera al temporizador, baja el contador de rondas y deja 1 fotograma para el paso siguiente
 	call temporizador_de_dos_contadores		;41c8
@@ -863,12 +863,12 @@ DATA_codigo_muerto_4542:
 ; ======================================================================
 
 
-L_454C:
+voltea_sprites:		; Voltea C sprites de 16x16 en la VRAM. El espejo de un sprite de 16x16 no es solo invertir sus bytes: hay que INTERCAMBIAR ADEMAS sus dos mitades, y eso es lo que hace el baile de 0x4556-0x455c, que escribe 16 bytes, retrocede 16 (`sub 020h`) y repite mientras el bit 4 de E siga a cero. Por eso pasandole destino 0x1b10 el sprite acaba en 0x1b00
 	push de			;454c
 L_454D:
 	ld b,010h		;454d
-copia_fila_de_bloque:		; Una fila de la copia de bloque de 0x454c: B celdas, y luego el salto de 0x20 con el ajuste del bit 4
-	call L_458F		;454f   ; una celda
+copia_fila_de_bloque:		; Una fila de voltea_sprites: 16 bytes, y luego el retroceso de 16 que salta a la otra mitad del sprite
+	call voltea_una_celda_de_vram		;454f   ; un byte, volteado
 	inc hl			;4552
 	inc e			;4553   ; la columna siguiente
 	djnz copia_fila_de_bloque		;4554
@@ -881,9 +881,9 @@ copia_fila_de_bloque:		; Una fila de la copia de bloque de 0x454c: B celdas, y l
 	ld a,020h		;455f
 	call suma_a_de		;4561   ; el destino avanza 0x20
 	dec c			;4564   ; y una fila menos
-	jr nz,L_454C		;4565
+	jr nz,voltea_sprites		;4565
 	ret			;4567
-L_4568:
+voltea_patrones:		; Voltea C patrones de 8 bytes en los TRES tercios de la tabla. OJO con el `pop hl` de 0x457f: recupera el origen ORIGINAL, no el avanzado, asi que los tres tercios se leen todos del PRIMERO. Sale bien de milagro, porque el cartucho escribe los tres tercios iguales
 	ld b,003h		;4568
 L_456A:
 	push bc			;456a
@@ -891,8 +891,8 @@ L_456A:
 	push de			;456c
 L_456D:
 	ld b,008h		;456d
-copia_celda_del_bloque:		; Una celda de la copia de bloque de 0x4568: origen y destino avanzan a la vez
-	call L_458F		;456f   ; copia una celda
+copia_celda_del_bloque:		; Un byte de voltea_patrones: origen y destino avanzan a la vez
+	call voltea_una_celda_de_vram		;456f   ; un byte, volteado
 	inc hl			;4572
 	inc de			;4573
 	djnz copia_celda_del_bloque		;4574   ; hasta acabar la fila
@@ -906,7 +906,7 @@ copia_celda_del_bloque:		; Una celda de la copia de bloque de 0x4568: origen y d
 	pop bc			;4580
 	djnz L_456A		;4581
 	ret			;4583
-L_4584:
+invierte_los_bits:		; Da la vuelta a los ocho bits de A: ocho `rr c` que sacan el bit bajo y ocho `rla` que lo meten por arriba. Es el espejo horizontal de una fila de 8 pixeles
 	push bc			;4584
 	ld c,a			;4585
 	ld b,008h		;4586
@@ -916,9 +916,9 @@ L_4588:
 	djnz L_4588		;458b
 	pop bc			;458d
 	ret			;458e
-L_458F:
+voltea_una_celda_de_vram:		; Lee un byte de VRAM (RDVRM), le da la vuelta con invierte_los_bits y lo escribe en la direccion de DE (WRTVRM), dejando HL y DE como estaban
 	call 0004ah		;458f   ; BIOS RDVRM - Reads the content of VRAM
-	call L_4584		;4592
+	call invierte_los_bits		;4592
 	ex de,hl			;4595
 	call 0004dh		;4596   ; BIOS WRTVRM - Writes data in VRAM
 	ex de,hl			;4599
@@ -1044,7 +1044,7 @@ L_4642:
 	pop af			;4642
 	ret			;4643
 revisa_teclado_y_salta_menu:		; Se cuela cada fotograma mientras 0xe002 bit 6 siga a 0: revisa si hay alguna tecla recien pulsada y, si la hay, salta a mano el logo/el aviso de titulo en vez de esperar a que la cascada de fotogramas de la tarea 0/1 termine sola. Verificado en caliente (tools/omsx_task_trace.tcl): las unicas transiciones 0->1 y 1->3 de 90 s de menu+demo tienen el PC en 0x4663 y 0x4679, dentro de esta rutina
-	call intento_de_parche_muerto		;4644   ; primero, el parche muerto de la tanda 5 (no hace nada, ver intento_de_parche_muerto)
+	call proteccion_anticopia_tarea_1		;4644   ; primero, la proteccion anticopia de 0x403e: desde ROM no hace nada, desde RAM machaca la tarea 1
 	ld hl,0e041h		;4647   ; HL=0xe041: la muestra de teclado guardada la vez anterior
 	call guarda_entrada_y_flanco		;464a   ; compara la muestra nueva (A -SUPOSICION: se asume dejada por el codigo de mas arriba en el mismo fotograma, no se ha confirmado quien la deja-) con la guardada y devuelve solo los bits recien pulsados (flanco de subida)
 	or a			;464d   ; sin ninguna tecla nueva, no hay nada que forzar
@@ -1342,7 +1342,7 @@ cadena_del_fotograma:		; La cadena completa de un fotograma de juego: sprites, s
 	call recorre_entidades_grandes		;4b42   ; las entidades grandes
 	call recoge_objetos		;4b45   ; recoge los objetos que toque el jugador
 	call despacha_estado_de_la_sala		;4b48   ; el estado general de la sala
-	call mueve_la_trampa		;4b4b   ; mueve las trampas
+	call mueve_el_muro_trampa		;4b4b   ; mueve las trampas
 	call recoge_de_la_otra_lista		;4b4e   ; y la otra lista de recogibles
 	call busca_enemigo_que_toca		;4b51   ; mira si algun enemigo ha tocado al jugador
 	call anima_bloques_que_se_abren		;4b54   ; y anima los bloques que se estan abriendo
@@ -1544,17 +1544,17 @@ DATA_tabla_4c7f:
 ; ======================================================================
 
 
-estado_0_jugador_en_pie:		; Estado 0: el jugador esta de pie o andando. Con el bit 4 de 0xe008 puesto reparte segun el nibble alto de 0xe144; si no, sigue por el camino normal de andar. SUPOSICION en el significado exacto de 0xe008 bit 4 y de 0xe144
+estado_0_jugador_en_pie:		; Estado 0: el jugador esta de pie o andando. Con el bit 4 de 0xe008 puesto (el boton) reparte segun lo que lleve en las manos, que dice el nibble alto de 0xe144: 0 nada, 1 el cuchillo -y lo lanza-, 2 el pico -y pica-. Si no, sigue por el camino normal de andar
 	ld a,(0e008h)		;4c8d   ; (0xe008) bit 4: SUPOSICION, marca que hay una accion en curso que atender antes que el andar normal
 	bit 4,a		;4c90
 	jr z,jugador_anda_o_cae		;4c92   ; sin accion pendiente: al camino normal de andar
-	ld a,(0e144h)		;4c94   ; (0xe144), nibble alto: SUPOSICION, el tipo de accion pendiente
+	ld a,(0e144h)		;4c94   ; (0xe144), nibble alto: el OBJETO QUE LLEVA EL JUGADOR -0 nada, 1 el cuchillo, 2 el pico-, que es lo que decide que hace el boton
 	and 0f0h		;4c97
 	jp z,estado_0_accion_tipo_0		;4c99   ; nibble alto 0: a 0x4d50
-	cp 010h		;4c9c   ; nibble alto 1: a 0x4dbf, el pico
-	jp nz,estado_0_accion_otra		;4c9e   ; cualquier otro: a 0x4e9f
-	jp pico_busca_bloque		;4ca1
-jugador_anda_o_cae:		; El camino normal del estado 0: si no hay suelo bajo los pies arranca la caida; si lo hay, aplica el movimiento y, cuando lleva 16 fotogramas seguidos empujando contra un bloque del tipo 0x5x, pasa al estado 6 con el efecto 0x03
+	cp 010h		;4c9c   ; nibble alto 1: lleva el CUCHILLO, y el boton lo lanza (0x4dbf)
+	jp nz,pico_busca_donde_picar		;4c9e   ; nibble alto 2: lleva el PICO, y el boton pica (0x4e9f)
+	jp cuchillo_busca_sitio		;4ca1
+jugador_anda_o_cae:		; El camino normal del estado 0: si no hay suelo bajo los pies arranca la caida; si lo hay, aplica el movimiento y, cuando lleva 16 fotogramas seguidos empujando contra una PUERTA GIRATORIA (celda del tipo 0x5x), pasa al estado 6 -cruzarla- con el efecto 0x03
 	call hay_suelo_bajo_los_pies		;4ca4   ; comprueba el suelo bajo los dos pies (hay_suelo_bajo_los_pies); C = no hay suelo
 	jp c,arranca_la_caida		;4ca7   ; sin suelo: arranca la caida
 	xor a			;4caa   ; con suelo: limpia el marcador de 0xe14d
@@ -1589,7 +1589,7 @@ jugador_anda_o_cae:		; El camino normal del estado 0: si no hay suelo bajo los p
 	ld (0e145h),a		;4ce5   ; (0xe145) := 0x20, el contador de esa fase
 	ld a,003h		;4ce8
 	call reproduce_efecto		;4cea   ; efecto de sonido 0x03
-	jp marca_bloque_que_se_abre		;4ced   ; y a 0x69c9 a rematar
+	jp marca_el_agujero_que_se_abre		;4ced   ; y a 0x69c9 a rematar
 L_4CF0:
 	xor a			;4cf0   ; se rompio la racha: el contador de empuje vuelve a 0
 	ld (0e146h),a		;4cf1
@@ -1763,7 +1763,7 @@ DATA_resto_4db9:
 guarda_estado:		; Guarda en 0xe134 el estado que trae A. Entrada compartida, alcanzada saltando los dos bytes muertos de DATA_resto_4db9
 	ld (0e134h),a		;4dbb   ; (0xe134) := A, el estado nuevo del jugador
 	ret			;4dbe
-pico_busca_bloque:		; Rama del estado 0 para el pico: mira la celda a un lado (offset -1 o +0x12 en X segun a que lado mire) y, si NO es del tipo que se pica, arranca el picado (estado 4, contador 0x15); si lo es, exige ademas que la X este alineada a 4 y mira dos pixeles mas alla, contando el hallazgo en 0xe131
+cuchillo_busca_sitio:		; Rama del estado 0 cuando el jugador lleva el CUCHILLO: mira si tiene sitio para lanzarlo -la celda a un lado, offset -1 o +0x12 en X segun a que lado mire- y, si no hay pared, arranca el lanzamiento (estado 4, contador 0x15); si hay pared, exige ademas que la X este alineada a 4 y mira dos pixeles mas alla, por si le cabe el cuchillo por encima. CORRECCION (2026-09-04): esto se llamaba "pico_busca_bloque" y no es el pico, es el cuchillo -el nibble 1 de 0xe144 es el cuchillo, y el juego de sprites que carga es GFX_ProtaKnife-
 	xor a			;4dbf   ; (0xe131) := 0: el contador de "bloques encontrados" de esta pasada
 	ld (0e131h),a		;4dc0
 	ld hl,0e136h		;4dc3   ; HL = 0xe136, a que lado mira; HL avanza a 0xe137 para la comprobacion
@@ -1777,14 +1777,14 @@ L_4DD0:
 	push bc			;4dd0
 	call sondea_una_celda		;4dd1   ; mira la celda con ese desplazamiento; Z = es del tipo 0x1x
 	pop bc			;4dd4
-	jr z,pico_afina_alineacion		;4dd5   ; tipo 0x1x: sigue afinando en 0x4de4
+	jr z,cuchillo_afina_alineacion		;4dd5   ; hay pared: sigue afinando en 0x4de4, a ver si cabe por encima
 L_4DD7:
-	ld a,015h		;4dd7   ; no es 0x1x: (0xe145) := 0x15, el contador del picado
+	ld a,015h		;4dd7   ; no hay pared: (0xe145) := 0x15, el contador de la animacion de lanzar
 	ld (0e145h),a		;4dd9
 	ld a,004h		;4ddc
-	ld (0e134h),a		;4dde   ; estado := 4, el del pico
+	ld (0e134h),a		;4dde   ; estado := 4, el de lanzar el cuchillo
 	jp pose_8		;4de1   ; y la pose 8
-pico_afina_alineacion:		; Continuacion de pico_busca_bloque cuando la celda de al lado era del tipo 0x1x: solo deja picar con la X alineada a 4 dentro de la celda, y vuelve a mirar dos pixeles mas atras; si tambien es solida, cuenta uno en 0xe131 y arranca el picado igual
+cuchillo_afina_alineacion:		; Continuacion de cuchillo_busca_sitio cuando la celda de al lado era pared: solo deja lanzar con la X alineada a 4 dentro de la celda, y mira una fila mas arriba por si hay hueco -el caso de estar metido en un agujero con sitio libre sobre la cabeza-; si tambien es solida, cuenta uno en 0xe131 y lanza igual
 	dec c			;4de4   ; C -= 1: el ajuste de fila baja uno
 	ld hl,0e139h		;4de5   ; HL = 0xe139, la X del jugador
 	ld a,(hl)			;4de8
@@ -1800,7 +1800,7 @@ pico_afina_alineacion:		; Continuacion de pico_busca_bloque cuando la celda de a
 	ld hl,0e131h		;4df6   ; (0xe131)++: cuenta que hay bloque a los dos lados
 	inc (hl)			;4df9
 	jr L_4DD7		;4dfa
-estado_4_picando:		; Estado 4 (picando): mientras el bit 4 de 0xe145 siga puesto cuenta atras; al llegar a nibble bajo 0 crea una entidad nueva (el trozo picado) copiando la posicion del jugador desplazada, y deja la pose 9 (o la 8 si no hubo bloque doble)
+estado_4_lanza_el_cuchillo:		; Estado 4 (lanzando el cuchillo): mientras el bit 4 de 0xe145 siga puesto cuenta atras; al llegar a nibble bajo 0 crea una entidad nueva -EL CUCHILLO QUE SALE VOLANDO- copiando la posicion del jugador desplazada, y deja la pose 9 (o la 8 si no hubo sitio doble)
 	ld hl,0e145h		;4dfc   ; HL = 0xe145, el contador del picado
 	bit 4,(hl)		;4dff   ; bit 4 puesto = todavia en la primera mitad del golpe
 	jr z,estado_4_termina		;4e01
@@ -1813,7 +1813,7 @@ estado_4_picando:		; Estado 4 (picando): mientras el bit 4 de 0xe145 siga puesto
 	inc hl			;4e0c
 	ld (hl),a			;4e0d
 	xor a			;4e0e
-	call campo_de_entidad_17		;4e0f   ; pide una entidad libre (0x5af6); HL apunta a ella
+	call campo_de_cuchillo		;4e0f   ; pide una entidad libre (0x5af6); HL apunta a ella
 	ld (hl),004h		;4e12   ; el primer campo de la entidad := 4
 	ld a,(0e136h)		;4e14   ; los dos bits de direccion del jugador, copiados a la entidad
 	and 003h		;4e17
@@ -1852,14 +1852,14 @@ pose_8:		; Fija la pose 8. Entrada compartida por las dos ramas del pico
 guarda_pose_y_vuelve:		; Guarda A en 0xe13f (la pose) y vuelve. Igual que guarda_pose, pero con su propio ret
 	ld (0e13fh),a		;4e47   ; (0xe13f) := A
 	ret			;4e4a
-estado_4_termina:		; Segunda mitad del picado (bit 4 de 0xe145 ya a cero): cuenta atras hasta 0 y devuelve el jugador al estado 0, limpiando 0xe144
+estado_4_termina:		; Segunda mitad del lanzamiento (bit 4 de 0xe145 ya a cero): cuenta atras hasta 0 y devuelve el jugador al estado 0, limpiando 0xe144 -o sea, dejando de llevar el cuchillo, que ya ha salido volando-
 	ld hl,0e145h		;4e4b   ; HL = 0xe145, el contador
 	dec (hl)			;4e4e   ; mientras no llegue a 0, nada
 	ret nz			;4e4f
 	xor a			;4e50
 	ld (0e134h),a		;4e51   ; estado := 0, otra vez en pie
 	jr limpia_accion_pendiente		;4e54
-estado_5_empujando:		; Estado 5: cuenta atras 0xe145; en los fotogramas intermedios alterna la pose entre 8 y 9, y cada vez que el nibble bajo llega a 0 avanza el paso -restando 3 a 0xe148 y llamando a 0x68e5 en la fase larga-. Cuando 0xe148 se agota, remata con 0x4faa, pose 1 y vuelta al estado 0
+estado_5_picando:		; Estado 5 (PICANDO con el pico): cuenta atras 0xe145; en los fotogramas intermedios alterna la pose entre 8 y 9, y cada vez que el nibble bajo llega a 0 avanza el paso del agujero -restando 3 a 0xe148 y llamando a 0x68e5 en la fase larga-. Cuando 0xe148 se agota, remata con 0x4faa, pose 1 y vuelta al estado 0
 	ld hl,0e145h		;4e56   ; HL = 0xe145, el contador de la accion
 	dec (hl)			;4e59   ; cuenta atras un fotograma
 	ld a,(hl)			;4e5a
@@ -1905,8 +1905,8 @@ limpia_accion_pendiente:		; Pone a 0 la accion pendiente (0xe144) y repinta el m
 	xor a			;4e98   ; A := 0
 guarda_accion_pendiente:		; Guarda A en 0xe144 (la accion pendiente) y repinta el marcador que dibuja 0x5031
 	ld (0e144h),a		;4e99   ; (0xe144) := A
-	jp repinta_marcador		;4e9c   ; y repinta el marcador correspondiente
-estado_0_accion_otra:		; Rama del estado 0 con el nibble alto de 0xe144 distinto de 0 y 1. Exige suelo, prueba 0x51b5/0x51b6 con la direccion invertida y, segun el resultado, calcula una posicion candidata en el scratch de 0xe149
+	jp carga_sprites_del_jugador		;4e9c   ; y repinta el marcador correspondiente
+pico_busca_donde_picar:		; Rama del estado 0 cuando el jugador lleva el PICO (nibble alto de 0xe144 = 2). Exige suelo, prueba 0x51b5/0x51b6 con la direccion invertida y, segun el resultado, calcula en el scratch de 0xe149 la celda que va a picar
 	ld hl,0e137h		;4e9f   ; HL = 0xe137, la posicion del jugador
 	call sondea_los_dos_pies		;4ea2   ; sin suelo bajo los pies, no hace nada
 	ret nz			;4ea5
@@ -1979,7 +1979,7 @@ comprueba_y_guarda_candidata:		; Suma el desplazamiento elegido a la X, descarta
 	add hl,bc			;4f08
 	ld a,(hl)			;4f09
 	and 0f0h		;4f0a   ; tipo 0x0x (hueco) o 0x2x: cualquier otro no vale
-	jr z,$+3		;4f0c
+	jr z,$+3		;4f0c   ; UN SALTO A MEDIA INSTRUCCION: `jr z,$+3` no cae en el `cp 020h` de 0x4f0e sino en su SEGUNDO byte, y ahi el 0x20 se decodifica como `jr nz,...`. Como se llega con Z puesto, ese `jr nz` nunca salta y el efecto es saltarse la comprobacion. Rareza del programador original, no un fallo
 	cp 020h		;4f0e
 	ret nz			;4f10
 	ld hl,0e134h		;4f11   ; estado := 5, el de empujar
@@ -2066,7 +2066,7 @@ L_4F7B:
 L_4F8E:
 	ld a,045h		;4f8e   ; efecto de sonido 0x45, el de activar algo
 	jp reproduce_efecto		;4f90
-estado_6_espera_larga:		; Estado 6: cada dos fotogramas cuenta atras 0xe145; mientras dura, avanza la animacion de andar; al agotarse vuelve al estado 0
+estado_6_puerta_giratoria:		; Estado 6 (PASANDO POR UNA PUERTA GIRATORIA): cada dos fotogramas cuenta atras 0xe145; mientras dura, avanza la animacion de andar -el jugador cruza la puerta-; al agotarse vuelve al estado 0
 	ld a,(0e003h)		;4f93   ; bit 0 del contador de fotogramas: solo actua uno de cada dos
 	and 001h		;4f96
 	ret nz			;4f98
@@ -2111,8 +2111,8 @@ prepara_sala_nueva:		; Borra los seis bytes de estado del jugador (0xe130-0xe135
 	call dibuja_guion_x3_tercios		;4fe5
 	ld hl,02340h		;4fe8
 	ld de,023b8h		;4feb
-	ld c,00fh		;4fee   ; C = 15 filas para la copia de bloque de 0x4568
-	call L_4568		;4ff0
+	ld c,00fh		;4fee   ; C = 15 PATRONES a voltear con 0x4568: los tiles 0x68-0x76 (la puerta de salida, la palanca y las escaleras) se copian del reves a 0x77-0x85. El cartucho no guarda esos dibujos dos veces: los fabrica al vuelo
+	call voltea_patrones		;4ff0
 	ld de,057b8h		;4ff3   ; el guion 0x57b8 en VRAM 0x03b8
 	ld hl,003b8h		;4ff6
 	call dibuja_guion_x3_tercios		;4ff9
@@ -2137,15 +2137,15 @@ repite_franja_seis_veces:		; Bucle que dibuja el guion 0x574a seis veces, bajand
 	call dibuja_guion_con_direccion		;5023
 	ld hl,01940h		;5026
 	ld de,01c50h		;5029
-	ld c,003h		;502c   ; C = 3 filas para la ultima copia de bloque
-	call L_454C		;502e
-repinta_marcador:		; Repinta el marcador de 0xe144: usa su nibble alto como indice de tabla_5050_indice (tres guiones posibles) y lo dibuja en VRAM 0x1800, rematando con una copia de bloque de 10 filas a 0x1b10
-	ld a,(0e144h)		;5031   ; A = (0xe144), la accion pendiente
+	ld c,003h		;502c   ; C = 3 SPRITES a voltear: la momia de 0x1940 se copia en espejo a 0x1c50, o sea al patron 0x88
+	call voltea_sprites		;502e
+carga_sprites_del_jugador:		; Carga el juego de sprites que corresponde a lo que el jugador lleva en las manos: el nibble alto de 0xe144 indexa tabla_5050_indice -0x51e9 con las manos vacias, 0x52a5 con el cuchillo, 0x53d8 con el pico- y lo dibuja en VRAM 0x1800, rematando con el volteo de sus diez sprites a 0x1b10, que es el patron 0x60. Los tres se cargan en la MISMA direccion: en la VRAM solo puede haber uno
+	ld a,(0e144h)		;5031   ; A = (0xe144), el objeto que lleva el jugador
 	rra			;5034   ; tres rra y &0x1e: el nibble alto pasa a indice de palabra (x2)
 	rra			;5035
 	rra			;5036
 	and 01eh		;5037
-	ld hl,05050h		;5039   ; HL = tabla_5050_indice, los tres punteros a guion
+	ld hl,05050h		;5039   ; HL = tabla_5050_indice, los tres juegos de sprites: manos vacias, cuchillo, pico
 	call palabra_de_tabla		;503c   ; HL = el guion que toca
 	ex de,hl			;503f
 	ld hl,01800h		;5040   ; destino: VRAM 0x1800
@@ -2154,7 +2154,7 @@ repinta_marcador:		; Repinta el marcador de 0xe144: usa su nibble alto como indi
 	pop hl			;5047
 	ld de,01b10h		;5048   ; y remata copiando 10 filas a VRAM 0x1b10
 	ld c,00ah		;504b
-	jp L_454C		;504d
+	jp voltea_sprites		;504d
 
 ; ----------------------------------------------------------------------
 ; DATOS tabla_5050_indice: 3 punteros (0x51e9, 0x52a5, 0x53d8), indexados por
@@ -2677,7 +2677,7 @@ L_57DE:
 	ld hl,05adfh		;57de   ; apila 0x5adf: el cierre del recorrido
 	push hl			;57e1
 	xor a			;57e2
-	call campo_de_entidad_17		;57e3   ; campo 0 de la entidad
+	call campo_de_cuchillo		;57e3   ; campo 0 de la entidad
 	call despacha_tabla_siguiente		;57e6   ; salta por tabla_57e9 (10 estados)
 
 ; ----------------------------------------------------------------------
@@ -2694,14 +2694,14 @@ DATA_tabla_57e9:
 
 entidad_estampa_su_celda:		; Entrada 0 de tabla_57e9: cuenta un paso, lee la celda donde esta la entidad y, si no es del tipo 0x3x, la guarda en su campo 10
 	xor a			;57fd
-	call campo_de_entidad_17		;57fe   ; campo 0 de la entidad
+	call campo_de_cuchillo		;57fe   ; campo 0 de la entidad
 	inc (hl)			;5801   ; cuenta un paso
 	inc hl			;5802
 	inc hl			;5803
 	call lee_celda_propia		;5804   ; lee su celda de sala
 	ex de,hl			;5807
 	ld a,00ah		;5808
-	call campo_de_entidad_17		;580a   ; campo 10 de la entidad
+	call campo_de_cuchillo		;580a   ; campo 10 de la entidad
 	ld a,(de)			;580d   ; A = la celda; B la guarda entera
 	ld b,a			;580e
 	and 0f0h		;580f   ; nibble alto
@@ -2724,7 +2724,7 @@ L_5827:
 L_5829:
 	ld (de),a			;5829   ; escrito en la celda de sala
 	xor a			;582a
-	call campo_de_entidad_17		;582b   ; campo 0 de la entidad
+	call campo_de_cuchillo		;582b   ; campo 0 de la entidad
 	ld a,04bh		;582e   ; patron 0x4b, el de la entidad
 	jp dibuja_si_esta_visible		;5830   ; dibujado si esta visible
 L_5833:
@@ -2736,7 +2736,7 @@ crea_entidad_desde_el_jugador:		; Rellena una entidad de la lista de 17 bytes a 
 	ld a,006h		;5838   ; efecto de sonido 0x06, el de crear la entidad
 	call reproduce_efecto		;583a
 	ld a,006h		;583d
-	call campo_de_entidad_17		;583f   ; campo 6 de la entidad
+	call campo_de_cuchillo		;583f   ; campo 6 de la entidad
 	ex de,hl			;5842
 	ld hl,06573h		;5843   ; HL = la plantilla de 0x6573
 	ld bc,0000bh		;5846   ; once bytes de plantilla
@@ -2768,14 +2768,14 @@ alinea_x_de_la_entidad:		; Alinea a multiplo de 8 la X de la entidad recien crea
 	call lee_celda_propia		;586f   ; lee la celda de sala de esa posicion
 	ex de,hl			;5872
 	ld a,00ah		;5873
-	call campo_de_entidad_17		;5875   ; campo 10 de la entidad
+	call campo_de_cuchillo		;5875   ; campo 10 de la entidad
 	ex de,hl			;5878
 	ldi		;5879   ; y guarda ahi los dos bytes de esa celda
 	ldi		;587b
 	ret			;587d
 patron_de_la_entidad:		; Traduce el campo 4 de la entidad (dos bits, tras dos rra) en un numero de patron leyendo la tabla de 0x588f (0x45, 0x46, 0x48, 0x49, 0x4b)
 	ld a,004h		;587e   ; campo 4 de la entidad
-	call campo_de_entidad_17		;5880
+	call campo_de_cuchillo		;5880
 	rra			;5883   ; dos rra y &3: se queda con dos bits del campo
 	rra			;5884
 	and 003h		;5885
@@ -2803,12 +2803,12 @@ DATA_patrones_de_entidad:
 
 mueve_entidad_grande:		; Paso completo de una entidad de la lista de 17 bytes: lee su posicion del campo 6, la avanza con 0x73f6 y, segun en que multiplo de 4 y de 8 caiga, la redibuja, comprueba si ha llegado a una celda del tipo 0x5x -y entonces cuenta uno y estampa el bloque- o la deja quieta
 	ld a,006h		;5894   ; campo 6 de la entidad
-	call campo_de_entidad_17		;5896
+	call campo_de_cuchillo		;5896
 	ld e,(hl)			;5899   ; DE = lo que hay ahi, un puntero
 	inc hl			;589a
 	ld d,(hl)			;589b
 	ld a,003h		;589c   ; campo 3 de la entidad
-	call campo_de_entidad_17		;589e
+	call campo_de_cuchillo		;589e
 	call avanza_posicion_24_bits		;58a1   ; le da un paso con 0x73f6
 	ld a,d			;58a4
 	and 003h		;58a5   ; D mod 4: solo actua en uno de cada cuatro
@@ -2831,7 +2831,7 @@ mueve_entidad_grande:		; Paso completo de una entidad de la lista de 17 bytes: l
 	inc hl			;58bf
 	call 0004dh		;58c0   ; BIOS WRTVRM - Writes data in VRAM | y lo escribe en la tabla de nombres
 	ld a,001h		;58c3
-	call campo_de_entidad_17		;58c5   ; campo 1 de la entidad
+	call campo_de_cuchillo		;58c5   ; campo 1 de la entidad
 	push hl			;58c8
 	ld a,(hl)			;58c9   ; A = ese campo
 	inc hl			;58ca
@@ -2851,7 +2851,7 @@ entidad_encuentra_bloque:		; Comprueba si la celda que ha alcanzado la entidad e
 	inc (hl)			;58dc   ; cuenta uno en el campo anterior
 	push hl			;58dd
 	ld a,00ah		;58de   ; campo 10 de la entidad
-	call campo_de_entidad_17		;58e0
+	call campo_de_cuchillo		;58e0
 	ex de,hl			;58e3
 	pop hl			;58e4
 	push de			;58e5
@@ -2866,17 +2866,17 @@ entidad_encuentra_bloque:		; Comprueba si la celda que ha alcanzado la entidad e
 	jp 0004dh		;58f4   ; BIOS WRTVRM - Writes data in VRAM | y lo escribe en la tabla de nombres
 entidad_en_celda_alineada:		; El camino de mueve_entidad_grande cuando la posicion cae justo en multiplo de 8: prepara IX con el campo 1, dibuja el patron y lee la celda contigua para decidir por donde sigue
 	ld a,001h		;58f7
-	call campo_de_entidad_17		;58f9   ; campo 1 de la entidad
+	call campo_de_cuchillo		;58f9   ; campo 1 de la entidad
 	push hl			;58fc
 	pop ix		;58fd   ; IX = ese campo, que las rutinas de abajo indexan
 	call patron_de_la_entidad		;58ff   ; A = el numero de patron
 	ld b,a			;5902
 	xor a			;5903
-	call campo_de_entidad_17		;5904   ; campo 0 de la entidad
+	call campo_de_cuchillo		;5904   ; campo 0 de la entidad
 	ld a,b			;5907
 	call dibuja_si_esta_visible		;5908   ; dibuja el patron
 	ld a,002h		;590b
-	call campo_de_entidad_17		;590d   ; campo 2, la posicion
+	call campo_de_cuchillo		;590d   ; campo 2, la posicion
 	call lee_celda_propia		;5910   ; lee la celda de sala de ahi
 	ld a,(ix+000h)		;5913   ; (IX+0), el campo 1
 	inc hl			;5916
@@ -2908,7 +2908,7 @@ dibuja_celda_que_sale:		; Si la entidad esta en la misma pantalla que el jugador
 	call traduce_celda_a_patron		;5946   ; traduce la celda que sale a numero de patron
 	push af			;5949
 	ld a,002h		;594a
-	call campo_de_entidad_17		;594c   ; campo 2 de la entidad
+	call campo_de_cuchillo		;594c   ; campo 2 de la entidad
 	ld d,(hl)			;594f   ; D = su Y
 	inc hl			;5950
 	inc hl			;5951
@@ -2931,11 +2931,11 @@ comprueba_choque_de_entidad:		; Guarda IX y DE, lanza busca_choque_con_entidad y
 	pop ix		;596a
 	jr nc,entidad_mira_celda_contigua		;596c   ; sin choque: sigue por el camino normal
 	xor a			;596e
-	call campo_de_entidad_17		;596f   ; campo 0 de la entidad
+	call campo_de_cuchillo		;596f   ; campo 0 de la entidad
 	jr cuenta_y_dibuja_entidad		;5972
 entidad_mira_celda_contigua:		; Lee la celda contigua a la entidad (a un lado o al otro segun el bit 0 de IX+0) y la clasifica con celda_es_solida; el tipo 0x40 tambien la frena
 	ld a,002h		;5974
-	call campo_de_entidad_17		;5976   ; campo 2, la posicion de la entidad
+	call campo_de_cuchillo		;5976   ; campo 2, la posicion de la entidad
 	push hl			;5979
 	call lee_celda_propia		;597a   ; lee la celda de sala de ahi
 	dec hl			;597d
@@ -3015,7 +3015,7 @@ entidad_cae_por_la_curva:		; Cada cuatro fotogramas avanza el campo 3 de la enti
 	and 003h		;59e3   ; mod 4: la caida avanza uno de cada cuatro fotogramas
 	jp nz,remata_paso_de_entidad		;59e5
 	ld a,001h		;59e8
-	call campo_de_entidad_17		;59ea   ; campo 1 de la entidad
+	call campo_de_cuchillo		;59ea   ; campo 1 de la entidad
 	push hl			;59ed
 	ld a,(hl)			;59ee   ; A = ese campo
 	inc hl			;59ef
@@ -3030,13 +3030,13 @@ aplica_la_curva_de_caida:		; Suma a la Y de la entidad el valor de la curva de 0
 	pop hl			;59f8
 	call ajusta_campo_de_paso		;59f9   ; la puesta a punto de 0x70ff
 	ld a,009h		;59fc
-	call campo_de_entidad_17		;59fe   ; campo 9 de la entidad: la fase de la caida
+	call campo_de_cuchillo		;59fe   ; campo 9 de la entidad: la fase de la caida
 	ld a,(hl)			;5a01
 	ld hl,05a3fh		;5a02   ; HL = la curva de 0x5a3f (-5,-2,-1,0,0,1,2,5)
 	call suma_a_hl		;5a05
 	ld b,(hl)			;5a08   ; B = el desplazamiento de Y de esta fase
 	ld a,002h		;5a09
-	call campo_de_entidad_17		;5a0b   ; campo 2, la posicion
+	call campo_de_cuchillo		;5a0b   ; campo 2, la posicion
 	ld a,(hl)			;5a0e
 	add a,b			;5a0f   ; Y += el desplazamiento de la curva
 	ld (hl),a			;5a10
@@ -3092,7 +3092,7 @@ entidad_espera_alineada:		; Cada cuatro fotogramas alinea el campo 2 de la entid
 	and 003h		;5a4a   ; mod 4: uno de cada cuatro
 	jp nz,remata_paso_de_entidad		;5a4c
 	ld a,002h		;5a4f
-	call campo_de_entidad_17		;5a51   ; campo 2 de la entidad
+	call campo_de_cuchillo		;5a51   ; campo 2 de la entidad
 	ld a,(hl)			;5a54
 	and 0fch		;5a55
 	ld (hl),a			;5a57
@@ -3118,12 +3118,12 @@ entidad_mira_debajo:		; Lee la celda que hay una fila mas abajo (HL += 0x60 = 96
 aparca_y_borra_entidad:		; Aparca el sprite de la entidad fuera de pantalla y le pone el campo 0 a cero: queda libre
 	call aparca_entidad_grande		;5a7f   ; aparca el sprite
 	xor a			;5a82
-	call campo_de_entidad_17		;5a83   ; campo 0 de la entidad
+	call campo_de_cuchillo		;5a83   ; campo 0 de la entidad
 	ld (hl),000h		;5a86   ; a cero: la entidad queda libre
 	ret			;5a88
 entidad_pasa_a_tipo_7:		; Deja el campo 0 de la entidad en 7 y pone a cero el campo nueve bytes mas alla
 	xor a			;5a89
-	call campo_de_entidad_17		;5a8a   ; campo 0 de la entidad
+	call campo_de_cuchillo		;5a8a   ; campo 0 de la entidad
 	ld (hl),007h		;5a8d   ; := 7, el tipo nuevo
 	ld a,009h		;5a8f
 	call suma_a_hl		;5a91   ; HL += 9: el campo lejano
@@ -3131,7 +3131,7 @@ entidad_pasa_a_tipo_7:		; Deja el campo 0 de la entidad en 7 y pone a cero el ca
 	ret			;5a96
 avanza_entidad_cuatro:		; Suma cuatro a la posicion de la entidad (cuatro inc seguidos), la alinea a multiplo de 4 y remata por 0x5ab6
 	ld a,002h		;5a97
-	call campo_de_entidad_17		;5a99   ; campo 2 de la entidad
+	call campo_de_cuchillo		;5a99   ; campo 2 de la entidad
 	inc (hl)			;5a9c
 	inc (hl)			;5a9d
 	inc (hl)			;5a9e
@@ -3153,7 +3153,7 @@ celda_es_solida:		; Clasifica el byte de una celda: devuelve Z si su nibble alto
 	ret			;5ab5
 remata_paso_de_entidad:		; Si la entidad esta en la pantalla del jugador, copia su posicion al bloque de sprites que le corresponde y le da un color que cambia cada cuatro fotogramas
 	ld a,005h		;5ab6
-	call campo_de_entidad_17		;5ab8   ; campo 5 de la entidad
+	call campo_de_cuchillo		;5ab8   ; campo 5 de la entidad
 	ld a,(0e13ah)		;5abb   ; A = el byte alto de la X del jugador
 	cp (hl)			;5abe   ; si no coincide, la entidad esta en otra pantalla y no se dibuja
 	jr nz,aparca_entidad_grande		;5abf
@@ -3194,10 +3194,10 @@ aparca_entidad_grande:		; Deja en 0xE0 el byte que apunta posicion_de_entidad_gr
 	ret			;5aef
 cuenta_un_paso_de_entidad:		; Suma uno al campo 0 de la entidad activa de la lista de 17 bytes
 	xor a			;5af0   ; campo 0 = el tipo/contador de la entidad
-	call campo_de_entidad_17		;5af1
+	call campo_de_cuchillo		;5af1
 	inc (hl)			;5af4   ; y lo incrementa
 	ret			;5af5
-campo_de_entidad_17:		; Devuelve en HL la direccion del campo A de la entidad activa de la lista de 17 bytes (base 0xE264, indice en 0xE262), y en A su contenido. El paso 17 sale de la cadena 2i-4i-8i-16i mas i
+campo_de_cuchillo:		; Devuelve en HL la direccion del campo A del CUCHILLO activo (base 0xE264, 17 bytes por cuchillo, indice en 0xE262) y en A su contenido. El paso 17 sale de la cadena 2i-4i-8i-16i mas i. La lista de 17 bytes son los cuchillos que el explorador ha lanzado: hasta cuatro
 	push bc			;5af6   ; BC se conserva: los llamadores lo usan como parametro propio
 	ld hl,0e264h		;5af7   ; HL = 0xE264, la base de la lista de 17 bytes
 	call suma_a_hl		;5afa   ; HL += el numero de campo que trae A
@@ -3242,7 +3242,7 @@ prueba_un_choque:		; Cuerpo del bucle de busca_choque_con_entidad: prepara la en
 	jr nz,siguiente_choque		;5b36
 compara_cajas:		; Compara la posicion de la entidad grande activa con la del registro de IX: primero el byte alto de la X (tienen que estar en la misma pantalla) y luego las dos cajas con la tabla de 0x5b84
 	ld a,002h		;5b38   ; campo 2 de la entidad grande: su posicion
-	call campo_de_entidad_17		;5b3a
+	call campo_de_cuchillo		;5b3a
 	ld d,(hl)			;5b3d   ; D = la Y
 	inc hl			;5b3e
 	inc hl			;5b3f
@@ -3304,7 +3304,7 @@ recorre_entidades_grandes:		; Recorre la lista de 17 bytes (indice 0xE262, tope 
 	ret z			;5b93
 prueba_una_entidad_grande:		; Cuerpo del bucle: mira el campo 0 de la entidad activa y, si vale exactamente 1 y 0x5cd6 devuelve C, salta a anotarla
 	xor a			;5b94   ; campo 0 de la entidad grande
-	call campo_de_entidad_17		;5b95
+	call campo_de_cuchillo		;5b95
 	call posicion_y_pantalla_1		;5b98   ; la comprobacion previa de 0x5bdd
 	jr nz,siguiente_entidad_grande		;5b9b
 	cp 001h		;5b9d   ; el campo 0 tiene que valer exactamente 1
@@ -3327,7 +3327,7 @@ anota_entidad_grande:		; La entidad que ha pasado la prueba se anota en 0xE261, 
 	ld a,010h		;5bbb
 	call guarda_accion_pendiente		;5bbd
 	xor a			;5bc0
-	call campo_de_entidad_17		;5bc1
+	call campo_de_cuchillo		;5bc1
 	inc (hl)			;5bc4
 	ld d,h			;5bc5
 	ld e,l			;5bc6
@@ -4104,7 +4104,7 @@ limpia_entidades_grandes:		; Recorre la lista de 17 bytes y, a las que tengan el
 	ld b,(hl)			;6640   ; B = (0xE263), el tope
 libera_una_entidad:		; Cuerpo del bucle: si el campo 0 vale exactamente 1, lo deja a 0
 	xor a			;6641
-	call campo_de_entidad_17		;6642   ; campo 0 de la entidad
+	call campo_de_cuchillo		;6642   ; campo 0 de la entidad
 	ld a,(hl)			;6645   ; A = ese campo
 	dec a			;6646   ; vale 1?
 	jr nz,siguiente_a_liberar		;6647
@@ -4368,7 +4368,7 @@ DATA_guiones_del_paso_de_sala:
 ; ======================================================================
 
 
-mueve_la_trampa:		; Mueve el peligro de la lista de 0xE3FF (SUPOSICION en que es exactamente; lo que si esta medido es que puede MATAR, por la salida de 0x6844). Pone a cero el indice, y segun el campo 0 de la primera entidad reparte entre el camino de 0x6877 y el de bajar por la columna cada 32 fotogramas
+mueve_el_muro_trampa:		; Mueve un MURO TRAMPA de la lista de 0xE3FF: un bloque de ladrillos que se desprende del techo y baja por la columna cada 32 fotogramas, matando lo que pille por delante (la salida de 0x6844). Los trae el descriptor de nivel, dos bytes por trampa, y no estan en el mapa hasta que se disparan. Deja de ser SUPOSICION desde 2026-09-04: lo confirman el descriptor -donde ocupan su propio bloque, ver tools/mapas.py- y el nombre que le da el desensamblado de Manuel Pazos (MurosTrampa)
 	ld hl,0e3fdh		;67f2   ; HL = 0xE3FD, el indice de esta lista
 	ld (hl),000h		;67f5   ; puesto a cero
 	inc hl			;67f7
@@ -4681,7 +4681,7 @@ escribe_par_de_celdas:		; Escribe dos celdas seguidas (C y C+1) en el buffer de 
 	dec c			;69c5
 	djnz escribe_par_de_celdas		;69c6
 	ret			;69c8
-marca_bloque_que_se_abre:		; Recorre la lista de bloques buscando el que este exactamente donde el jugador esta picando -misma Y y una X a 8 pixeles al lado segun a que lado mire- y le pone el bit 0 del campo 0, que es lo que hace que 0x6938 lo empiece a abrir
+marca_el_agujero_que_se_abre:		; Recorre la lista de agujeros buscando el que este exactamente donde el jugador esta picando -misma Y y una X a 8 pixeles al lado segun a que lado mire- y le pone el bit 0 del campo 0, que es lo que hace que 0x6938 lo empiece a abrir. Picar no rompe un bloque suelto: abre un AGUJERO en el suelo de ladrillo, y por ahi se cuela el explorador y se cuelan las momias
 	xor a			;69c9   ; indice de bloque := 0
 	ld (0e31ch),a		;69ca
 prueba_un_bloque:		; Cuerpo del bucle: monta la posicion que tendria que tener el bloque para estar donde pica el jugador
@@ -4894,13 +4894,13 @@ L_6AF8:
 	add ix,bc		;6b0c
 	pop de			;6b0e
 	pop bc			;6b0f
-	ld a,(de)			;6b10   ; mira el SIGUIENTE byte sin gastar el puntero: si su nibble alto es 3, no hay mas bandas (fin de la sala)
+	ld a,(de)			;6b10   ; CUIDADO: el `pop de` de 0x6b0e ha devuelto el puntero a la banda que se ACABA de desempaquetar, asi que aqui se relee ESA banda, no la siguiente. O sea que la banda cuyo nibble alto vale 3 se dibuja Y ADEMAS cierra la lista: las salas tienen una banda mas de las que parece -32 columnas las impares y 64 las pares, no 16 y 48-. Comprobado contra la RAM de una maquina de verdad, 31.680 celdas sin una diferencia (tools/omsx_dump_mapa.tcl y tools/mapas.py --comprueba)
 	inc de			;6b11
 	and 0f0h		;6b12
 	cp 030h		;6b14
 	jr z,reparte_entidades_de_la_sala		;6b16
 	djnz bucle_de_bandas		;6b18
-reparte_entidades_de_la_sala:		; Segunda mitad de carga_la_sala: deja 0xE1C4 en 4 y recorre las cuatro entradas de la lista de 7 bytes, copiando de cada una la posicion descomprimida y decidiendo con 0x6d49 si aparece o no en esta partida
+reparte_entidades_de_la_sala:		; Segunda mitad de carga_la_sala. Las CUATRO entradas de la lista de 7 bytes son las PUERTAS de la piramide: el 0xFF del descriptor marca la que no existe, la que coincide con (0xE056) es la de entrada -y se pinta abierta- y el resto quedan cerradas o invisibles segun diga 0x6d49, que mira si esa piramide ya se ha pasado. De cada una se guardan ademas la piramide de DESTINO (nibble alto) y la direccion de la flecha del mapa (nibble bajo)
 	ld hl,0e1c4h		;6b1a   ; HL = 0xE1C4
 	ld (hl),004h		;6b1d   ; := 4, las cuatro entradas fijas de esta lista
 	inc hl			;6b1f
@@ -4972,7 +4972,7 @@ siguiente_de_las_cuatro:		; Final del bucle de las cuatro entradas fijas, y de a
 	ldi		;6b7b
 	inc de			;6b7d
 	ld b,a			;6b7e
-reparte_un_objeto:		; Un objeto de la lista de 9 bytes: su campo 0 conserva el nibble alto del descriptor con el bit 0 puesto, su campo 1 vale 1, y la posicion se descomprime
+reparte_una_gema:		; Una GEMA de la lista de 9 bytes: su campo 0 conserva el nibble alto del descriptor -que es su COLOR, de 3 a 8- con el bit 0 puesto para marcarla activa, su campo 1 vale 1, y la posicion se descomprime
 	push bc			;6b7f
 	ld a,(hl)			;6b80   ; A = el byte del descriptor
 	and 0f0h		;6b81   ; conserva el nibble alto...
@@ -4988,7 +4988,7 @@ reparte_un_objeto:		; Un objeto de la lista de 9 bytes: su campo 0 conserva el n
 	inc de			;6b90
 	inc de			;6b91
 	pop bc			;6b92
-	djnz reparte_un_objeto		;6b93
+	djnz reparte_una_gema		;6b93
 	push hl			;6b95
 	xor a			;6b96
 	ld (0e1f4h),a		;6b97
@@ -5332,14 +5332,26 @@ descomprime_posicion:		; Descomprime al formato de registro los DOS bytes con qu
 	ret			;6d67
 
 ; ----------------------------------------------------------------------
-; DATOS tabla_de_habitaciones: 21 punteros (15 indexados por nivel via 0xE054,
-;   los ultimos 4 reutilizados como tipos de pared 0-3); confirmada leyendo y
-;   con watchpoint en openMSX
-;   0x6d68..0x6d92  (42 bytes)
+; DATOS tabla_de_habitaciones: 19 punteros: 15 indexados por nivel via 0xE054
+;   y los 4 ultimos reutilizados como base de cada tipo de pared; confirmada
+;   leyendo y con watchpoint en openMSX
+;   0x6d68..0x6d8e  (38 bytes)
 DATA_tabla_de_habitaciones:
 	defw 06032h,06065h,06173h,0610dh,060c8h,061b3h,062cch,06220h	; 6d68
 	defw 0630ch,0634ah,06282h,063f3h,06457h,064a3h,063aah,05dcah	; 6d78
-	defw 05e7ah,05efeh,05f82h,04140h,04200h	; 6d88
+	defw 05e7ah,05efeh,05f82h	; 6d88  -> DATA_patrones_pared_tipo1 DATA_patrones_pared_tipo2 DATA_patrones_pared_tipo3
+
+; ----------------------------------------------------------------------
+; DATOS brillos_de_la_gema: Los cuatro bytes que rodean a una gema al
+;   sembrarla: 0x40 el destello de arriba, 0x41 el de la izquierda, 0x00 el
+;   hueco donde va la propia gema y 0x42 el destello de la derecha. Los copia
+;   el bucle de 0x6795 una fila por encima y luego a los lados
+;   0x6d8e..0x6d92  (4 bytes)
+DATA_brillos_de_la_gema:
+	defb 040h	; 6d8e
+	defb 041h	; 6d8f
+	defb 000h	; 6d90
+	defb 042h	; 6d91
 
 ; ======================================================================
 ; CODIGO 0x6d92..0x6dc4  (50 bytes)
@@ -6955,7 +6967,7 @@ DATA_plantilla_registro_del_jugador:
 ; ======================================================================
 
 
-monta_pantalla_de_sala:		; Prepara la pantalla que precede a la sala: aparca los sprites, dibuja los guiones de 0x7836, 0x78df y 0x7908, pone a cero el contador de reposo (0xE130) y el de 0xE140, suena el efecto 0x91 y monta los digitos de (0xE054) y (0xE057)
+monta_el_mapa_del_valle:		; Prepara EL MAPA DEL VALLE, la pantalla que sale entre piramide y piramide: aparca los sprites, dibuja los guiones de 0x7836, 0x78df y 0x7908 -el sendero con las quince piramides y el rotulo GOAL-, pone a cero el contador de reposo (0xE130) y el de 0xE140, suena el efecto 0x91 y monta los digitos de (0xE054) y (0xE057). Las quince piramides no son una lista: son un ANILLO, y cada puerta de cada piramide dice a cual lleva (ver reparte_entidades_de_la_sala)
 	call aparca_buffer_de_sprites		;773c   ; aparca todos los sprites del buffer
 	ld de,07836h		;773f   ; el guion 0x7836 en VRAM 0x2600
 	ld hl,02600h		;7742

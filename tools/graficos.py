@@ -1,5 +1,11 @@
 """Decodifica el MAPA DE PARED/HUECO de las 15 salas desde la ROM.
 
+OJO: para dibujar las piramides de verdad -con las gemas, las escaleras, los
+picos, los cuchillos, las puertas y las momias- esta tools/mapas.py, que lee el
+descriptor de nivel ENTERO y esta comprobado celda a celda contra la RAM y la
+VRAM de una maquina real. Este fichero se queda como el decodificador minimo de
+pared/hueco.
+
 L_6A90-L_6D67 (la rutina que prepara una sala) no dibuja en VRAM: desempaqueta
 bit a bit un patron de pared en el buffer de RAM 0xE700+. Ese calculo se
 replica aqui exactamente igual -tabla_de_habitaciones, patrones_pared_tipo0..3
@@ -52,15 +58,22 @@ def tabla_de_habitaciones(rom, org=ORG):
 
 
 def descriptores_de_sala(rom, ptr, org=ORG):
-    """Hasta 4 bytes descriptor de sala, con la misma salida anticipada que
-    L_6ABC (0x6b10-6b16): si el nibble alto del SIGUIENTE byte es 3, para."""
+    """Hasta 4 bytes descriptor de sala.
+
+    CORRECCION (2026-09-04): esto miraba el nibble alto del byte SIGUIENTE y
+    perdia una banda por sala. El `pop de` de 0x6b0e devuelve el puntero a la
+    banda que se acaba de desempaquetar, asi que el `cp 030h` de 0x6b14 mira
+    ESA: la banda 0x3x se dibuja y ademas cierra la lista. Ver tools/mapas.py,
+    que es el que hace este trabajo de verdad y esta comprobado contra la RAM
+    de una maquina real.
+    """
     de = ptr
     descs = []
     for _ in range(4):
         b = _rb(rom, de, org)
         descs.append(b)
         de += 1
-        if (_rb(rom, de, org) & 0xF0) == 0x30:
+        if (b & 0xF0) == 0x30:
             break
     return descs
 

@@ -1,7 +1,7 @@
 # En el emulador
 
 Leer opcodes no basta para todo. Algunas cosas sólo se pueden cerrar mirando lo
-que la máquina hace de verdad, y para eso hay cinco guiones de openMSX en
+que la máquina hace de verdad, y para eso hay siete guiones de openMSX en
 `tools/`.
 
 Todos siguen el mismo patrón: un breakpoint en `INIT` (0x406C) para armar los
@@ -71,19 +71,52 @@ de pantalla; y que el patrón que reescribe `parpadea_patron_borde` (0x0288/8 =
 0x51 exacto) es byte a byte el mismo índice que usan las cuatro esquinas del
 marco de piedra en las cinco salas muestreadas.
 
-## `omsx_check_4644.tcl` — el parche que no hace nada
+## `omsx_check_4644.tcl` — la escritura que nunca llega
 
-`L_403E` hace código automodificante: parchea el primer byte de la tarea 1 con
-un `pop hl` + `ret`, neutralizándola. Pero lo hace **idéntico cada vez** sin
-leer ningún estado que cambie, y eso no encajaba.
+0x403E hace código automodificante: escribe un `pop hl` + `ret` encima del
+primer byte de la tarea 1. Pero lo hace **idéntico cada vez** sin leer ningún
+estado que cambie, y eso no encajaba.
 
 Breakpoints en 0x4644, 0x403E y 0x40E4, 120 segundos emulados. Resultado real:
 0x403E se ejecuta **92 veces** —o sea que es ruta normal, no un caso raro—,
 pero el primer byte de la tarea 1 sigue leyendo 0x10 las nueve veces que esa
-tarea corre después.
+tarea corre después, porque la escritura cae en **0x4000-0x7FFF, que es ROM**.
 
-La explicación es sencilla y no se veía leyendo: la escritura cae en
-**0x4000-0x7FFF, que es ROM**. No tiene ningún efecto. Es un no-op.
+Lo que esa medición no podía decir es *por qué*. Es una **protección
+anticopia**: inofensiva en un cartucho, letal en una copia cargada en RAM. Ver
+[Hallazgos](HALLAZGOS.html).
+
+## `omsx_dump_mapa.tcl` — la sala entera, con sus elementos
+
+`omsx_dump_sala.tcl` para en mitad del desempaquetado de una banda, y eso sólo
+demuestra las paredes. Éste para en 0x4176, el primer sitio donde
+`carga_la_sala` y `reparte_entidades_de_la_sala` ya han terminado y todavía no
+ha pintado nadie la puerta de entrada, y vuelca el buffer de mapa entero,
+23x96, desde 0xE700.
+
+La demo sólo juega la pirámide 5, así que el nivel se **fuerza** en 0x6A90
+—0xE054 y 0xE055 las dos, porque lo primero que hace esa rutina es copiar una
+sobre la otra— y la máquina se reinicia entre nivel y nivel.
+
+    python3 tools/mapas.py --comprueba kingsvalley.rom 0x4000 work/omsx_mapa
+
+**Quince volcados, 31.680 celdas comparadas, 0 diferencias.**
+
+## `omsx_vram_sala.tcl` — la imagen misma
+
+El mismo forzado, pero parando en 0x4185, con la sala ya en pantalla y los
+sprites puestos, y volcando los 16 KB de VRAM y los ocho registros del VDP.
+Después, dos segundos emulados más tarde, otra vez la tabla de atributos de
+sprites: las momias no están cuando se monta la sala, llegan con un
+temporizador, y de ahí salen los dos colores del explorador y el color de cada
+tipo de momia.
+
+    python3 tools/mapas.py --vram kingsvalley.rom 0x4000 work/omsx_vram
+
+**Quince niveles; tabla de nombres, de patrones, de color y de patrones de
+sprites; 0 diferencias.** De las tablas de patrones y color sólo se exigen los
+tiles que la pantalla usa de verdad: el resto son restos de la pantalla de
+título que el juego ni reescribe ni mira.
 
 ## `omsx_barrido_huecos.tcl` y `omsx_quien_lee.tcl`
 
@@ -95,15 +128,12 @@ poniendo un watchpoint y anotando el PC.
 
 Hay que decirlo con la misma claridad:
 
-- Las **pantallas dibujadas** por `tools/pantallas.py` —el título, las salas
-  con sus gráficos, la pantalla final— **no se han comparado byte a byte contra
-  la VRAM del emulador**. Se han mirado, y salen reconocibles y coherentes: el
+- Las **pantallas de menú** que dibuja `tools/pantallas.py` —el título, el mapa
+  del valle, la pantalla final— **no se han comparado byte a byte contra la
+  VRAM del emulador**. Se han mirado, y salen reconocibles y coherentes: el
   logotipo de Konami sale nítido, lo que sólo puede pasar si la lectura de R3 y
-  R4 es correcta. Pero mirar no es comparar.
-- El **mapa de las salas** sí estaba comprobado (0 diferencias en 352 celdas),
-  pero con el decodificador anterior, el que sólo daba pared o hueco. La
-  traducción de celda a número de tile y los colores por grupo de nivel no lo
-  están.
+  R4 es correcta. Pero mirar no es comparar. Las quince **pirámides** son otra
+  cosa: ésas sí están comparadas, y cuadran.
 - Que **0xE130 sea el contador de fotogramas** de la pantalla en reposo está
   deducido de cómo se usa —se incrementa una vez por fotograma y se compara
   contra dos plazos, 0x58 y 0xE0—, no medido.

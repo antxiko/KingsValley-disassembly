@@ -1,8 +1,8 @@
 # In the emulator
 
 Reading opcodes is not enough for everything. Some things can only be settled
-by watching what the machine actually does, and for that there are five openMSX
-scripts in `tools/`.
+by watching what the machine actually does, and for that there are seven
+openMSX scripts in `tools/`.
 
 They all follow the same pattern: a breakpoint at `INIT` (0x406C) to arm the
 watchpoints **after** page 1 really is the cartridge, blind input driven by
@@ -70,19 +70,51 @@ parked off screen; and that the pattern `parpadea_patron_borde` rewrites
 (0x0288/8 = 0x51 exactly) is byte for byte the same index the four corners of
 the stone frame use in all five sampled rooms.
 
-## `omsx_check_4644.tcl` — the patch that does nothing
+## `omsx_check_4644.tcl` — the write that never lands
 
-`L_403E` does real self-modifying code: it patches the first byte of task 1
-with a `pop hl` + `ret`, neutralising it. But it does so **identically every
-time** without reading any state that changes, and that did not add up.
+0x403E does real self-modifying code: it writes a `pop hl` + `ret` over the
+first byte of task 1. But it does so **identically every time** without reading
+any state that changes, and that did not add up.
 
 Breakpoints at 0x4644, 0x403E and 0x40E4, 120 emulated seconds. The real
 result: 0x403E runs **92 times** — so it is a normal path, not some rare case —
 but the first byte of task 1 still reads 0x10 on all nine occasions that task
-runs afterwards.
+runs afterwards, because the write lands in **0x4000-0x7FFF, which is ROM**.
 
-The explanation is simple and did not show up on reading: the write lands in
-**0x4000-0x7FFF, which is ROM**. It has no effect at all. It is a no-op.
+What that measurement could not tell us is *why*. It is a **copy protection**:
+harmless in a cartridge, lethal in a copy loaded into RAM. See
+[Findings](FINDINGS.html).
+
+## `omsx_dump_mapa.tcl` — the whole room, elements included
+
+`omsx_dump_sala.tcl` stops in the middle of unpacking one band, which only
+proves the walls. This one stops at 0x4176, the first place where
+`carga_la_sala` and `reparte_entidades_de_la_sala` have both finished and
+nothing has painted the entrance door yet, and dumps the complete 23x96 map
+buffer from 0xE700.
+
+The demo only ever plays pyramid 5, so the level is **forced** at 0x6A90 — both
+0xE054 and 0xE055, because the first thing that routine does is copy one over
+the other — and the machine is reset between levels.
+
+    python3 tools/mapas.py --comprueba kingsvalley.rom 0x4000 work/omsx_mapa
+
+**Fifteen dumps, 31,680 cells compared, 0 differences.**
+
+## `omsx_vram_sala.tcl` — the picture itself
+
+The same forcing, but stopping at 0x4185, with the room already on screen and
+the sprites in place, and dumping all 16 KB of VRAM plus the eight VDP
+registers. Then, two emulated seconds later, the sprite attribute table again —
+the mummies are not there when the room is built, they arrive on a timer — which
+is where the explorer's two colours and each mummy type's colour were read.
+
+    python3 tools/mapas.py --vram kingsvalley.rom 0x4000 work/omsx_vram
+
+**Fifteen levels; name table, pattern table, colour table and sprite pattern
+table; 0 differences.** Of the pattern and colour tables only the tiles the
+screen actually uses are required to match — the rest of those tables is
+leftovers from the title screen that the game neither rewrites nor reads.
 
 ## `omsx_barrido_huecos.tcl` and `omsx_quien_lee.tcl`
 
@@ -94,15 +126,12 @@ recording the PC.
 
 This needs saying just as plainly:
 
-- The **screens drawn** by `tools/pantallas.py` — the title, the rooms with
-  their graphics, the final screen — have **not been compared byte for byte
-  against the emulator's VRAM**. They have been looked at, and they come out
-  recognisable and coherent: the Konami wordmark comes out crisp, which can
-  only happen if the reading of R3 and R4 is right. But looking is not
-  comparing.
-- The **room map** was checked (0 differences across 352 cells), but with the
-  earlier decoder, the one that only gave wall or hole. The cell-to-tile
-  translation and the per-group colours are not.
+- The **menu screens** drawn by `tools/pantallas.py` — the title, the valley
+  map, the final screen — have **not been compared byte for byte against the
+  emulator's VRAM**. They have been looked at, and they come out recognisable
+  and coherent: the Konami wordmark comes out crisp, which can only happen if
+  the reading of R3 and R4 is right. But looking is not comparing. The fifteen
+  **pyramids** are a different matter: those are compared, and they match.
 - That **0xE130 is the frame counter** of the screen at rest is deduced from
   how it is used — incremented once per frame and compared against two
   deadlines, 0x58 and 0xE0 — not measured.

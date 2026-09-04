@@ -35,7 +35,7 @@ peso son justo los que `lee_celda_de_sala` toma como X entera para mirar una
 celda. Los dos usos encajan sin tener que ajustar nada.
 
 Hace falta tanta X porque **la sala es más ancha que la pantalla**: las salas
-pares miden 48 columnas, 384 píxeles, y no caben en un byte. Cuando el
+pares miden 64 columnas, 512 píxeles, y no caben en un byte. Cuando el
 explorador sale por un lateral, `sale_por_el_lateral` (0x4BBC) manda a la tarea
 9, y ésta hace `ld (0e139h),bc` con la X baja en 0xF0 o en 0x04 —el borde
 opuesto— y el byte alto cambiado en uno: un salto de **256 píxeles**, una
@@ -77,15 +77,32 @@ La segunda cuenta algo del diseño del juego: **este cartucho nunca lee de la
 VRAM**. Escribe y se olvida. Todo el estado vive en RAM, incluido un buffer
 completo de la sala.
 
-## Seis listas de entidades, seis pasos distintos
+Manuel Pazos marcó esos dos mismos tramos como código no usado en 2009, por su
+cuenta. Dos lecturas separadas por dieciséis años dando en las mismas dos
+direcciones es lo más cerca que se puede estar de una prueba, en esto.
+
+## Seis listas de entidades, y qué es cada una
 
 Seis tablas paralelas, cada una con su rutina de acceso, y el tamaño de cada
 entrada no hay que suponerlo: está en la multiplicación. 0x6A12 hace i, 3i, 7i
 con B llevando las potencias de dos; 0x65A5 llega a 9i; 0x5AF6 entra a media
 cadena y llega a 17i; 0x73D3 hace 2i, 6i, 22i.
 
-Las de paso 7 y 9 comparten índice: son dos bloques de campos de la **misma**
-entidad, partidos en dos zonas de memoria.
+Leer el descriptor de nivel byte a byte dice qué guarda cada una:
+
+| paso | lista | qué es |
+|---|---|---|
+| 7 | 0xE1C4 | las cuatro **puertas de salida** de la pirámide |
+| 7 | 0xE31E | las **puertas giratorias** |
+| 9 | 0xE1F3 | las **gemas**, con su color en un byte |
+| 9 | 0xE3FF | los **muros trampa** |
+| 17 | 0xE264 | los **cuchillos ya lanzados**, hasta cuatro |
+| 22 | 0xE16A | las **momias** |
+
+Una versión anterior de esta página decía que las de paso 7 y 9 eran "dos
+bloques de campos de la misma entidad" porque comparten índice. No lo son: son
+las puertas y las gemas, y lo que comparten es una variable de contador,
+`ElemEnProceso`, porque el mismo bucle recorre las dos.
 
 ## El parpadeo de los sprites está repartido a propósito
 
@@ -143,6 +160,100 @@ vacío**. Todo el juego corre dentro de la interrupción.
 No es una lectura nueva: es el mismo patrón que ya documentan los
 desensamblados de Sky Jaguar y Konami's Golf para esta familia de cartuchos.
 
+## El cartucho se defiende, dos veces
+
+Dos rutinas escriben dentro del propio espacio del cartucho. Corriendo desde
+ROM ninguna de las dos hace nada, y es fácil archivarlas como código muerto. No
+lo son: son **protección anticopia**, y que no hagan nada es justo la gracia.
+Un cartucho pirateado es una copia cargada en RAM, y en RAM las escrituras sí
+cuelan.
+
+- **0x403E** copia el byte `0xE1` (`pop hl`) sobre el primer byte de la tarea 1
+  y le pone un `0xC9` (`ret`) detrás. En RAM, la tarea del título queda
+  destrozada. Se ejecuta 92 veces en dos minutos de partida, medido con un
+  punto de ruptura; el byte de destino no cambia nunca.
+- **0x409C** escribe DE encima de **0x43C0**, que no es un dato: es el operando
+  del `jp nc,cierra_aviso_titulo` de 0x43BF. En RAM, dibujar el título salta a
+  donde apuntase DE.
+
+Las identificó **Manuel Pazos** en su desensamblado de 2009
+([GuillianSeed/Kings-Valley](https://github.com/GuillianSeed/Kings-Valley)),
+como `ReadKeys_AC` y `VRAM_writeAC`. Este proyecto tenía la de 0x403E escrita
+como un parche fallido y la de 0x409C como una dirección de relleno, y las dos
+estaban mal.
+
+## Ésta es la primera versión, y hay una segunda
+
+El cartucho existe en dos compilaciones. En **0x5817** la nuestra tiene
+`fe 31 28 18 fe 21 28 04 fe 22 20 04` —las tres comparaciones sueltas que la
+segunda versión sustituye por dos restas— y la firma de la segunda,
+`e6 f0 fe 30 e1 c8 34 3e 04 be`, no aparece en ninguno de los 16.384 bytes.
+
+O sea que lo desensamblado aquí es la **versión 1**, con sus fallos. Pazos
+enumera lo que arregla la segunda: lanzar un cuchillo mientras la puerta de
+salida se abre corrompe sus tiles; lanzarlo pegado a un objeto lo atraviesa; un
+muro trampa que choca contra un objeto lo borra en vez de pararse, porque el
+código decrementa los decimales de la X en lugar de la Y; y dos muros trampa,
+en las pirámides 10 y 12, están mal colocados.
+
+## Cada sala es el doble de ancha de lo que parece su lista de bandas
+
+`carga_la_sala` desempaqueta la sala de una lista de bytes de banda y para en
+la banda cuyo nibble alto vale 3. La trampa está en **0x6B0E**: el `pop de` de
+ahí devuelve el puntero a la banda que se *acaba* de desempaquetar, así que el
+`cp 030h` de dos instrucciones más allá mira **esa** banda, no la siguiente. La
+banda 0x3x se dibuja **y además** cierra la lista.
+
+Leído al revés se pierde una banda por sala. Los anchos de verdad son **32
+columnas las impares y 64 las pares** —una pantalla y dos pantallas—, no 16 y
+48 como publicó este proyecto.
+
+El arreglo no es una opinión: el buffer de sala que ahora calculamos se comparó
+contra la RAM de una máquina de verdad en las quince pirámides, **31.680 celdas
+sin una sola diferencia**, y después las pantallas dibujadas se compararon
+contra la VRAM de esa máquina —tabla de nombres, de patrones, de color y de
+patrones de sprites— también con **cero diferencias**.
+
+## Las figuras que miran al otro lado no están en el cartucho
+
+Hay un dibujo del explorador y uno de la momia, los dos mirando a la derecha.
+Las versiones en espejo se **fabrican en marcha**: 0x4584 da la vuelta a los
+ocho bits de un byte, 0x458F aplica eso a un byte de VRAM, y encima hay dos
+bucles que voltean figuras enteras —diez sprites del explorador al patrón 0x60
+y tres de la momia al 0x88—.
+
+Voltear un sprite de 16x16 no es sólo invertir sus bytes: hay que
+**intercambiar además sus dos mitades**, y eso es lo que hace el bailecito de
+0x4556-0x455C: escribe dieciséis bytes, retrocede dieciséis y repite mientras
+el bit 4 de E siga a cero.
+
+El mismo truco voltea quince *tiles*, del 0x68 al 0x76 sobre el 0x77 al 0x85:
+la puerta de salida, la palanca y las escaleras que se inclinan al otro lado.
+
+## El valle es un anillo, no una escalera
+
+Cada una de las cuatro ranuras de puerta del descriptor de nivel lleva escrito
+el número de la pirámide a la que da. Puestas en fila, las quince forman un
+**círculo cerrado**: de la 1 a la 2, a la 3... a la 15 y otra vez a la 1. Todas
+menos la primera tienen una puerta de vuelta.
+
+Y no se reinicia al terminar. El tipo de cada momia es el byte de su descriptor
+**más el número de veces que se ha pasado el juego**, topado en 4. Los cinco
+tipos se diferencian en velocidad y color, desde la blanca a velocidad 5 hasta
+la amarilla oscura a velocidad 11. Pásate el juego cuatro veces y todas las
+momias del valle son de la clase más rápida.
+
+## Un salto a media instrucción
+
+En 0x4F0C hay un `jr z,$+3`. Tres bytes más allá no hay principio de
+instrucción: hay el **segundo byte** del `cp 020h` de 0x4F0E, y ese 0x20 suelto
+se decodifica como `jr nz`. Como al salto sólo se llega con Z puesto, ese
+`jr nz` no dispara nunca, y el efecto es saltarse la comprobación.
+
+Reensambla byte a byte de las dos maneras. Merece señalarlo porque un
+desensamblador que se empeñe en respetar los límites de instrucción se
+equivocará aquí en silencio.
+
 ## Sí lleva la marca oculta de Konami
 
 Konami escondió su número de catálogo y el título en katakana al final de
@@ -157,3 +268,14 @@ RC-727    O U   KE   NO   TA   NI
 
 **OU KE NO TA NI** es 王家の谷, el título japonés del juego: el *Valle de los
 Reyes*.
+
+## De dónde sale parte de esto
+
+**Manuel Pazos** publicó en 2009 un desensamblado comentado de este cartucho:
+[GuillianSeed/Kings-Valley](https://github.com/GuillianSeed/Kings-Valley). Las
+dos protecciones anticopia, la existencia de una segunda compilación, los
+nombres de las piezas del juego —momia, gema, pico, cuchillo, palanca, puerta
+giratoria, muro trampa— y la forma del descriptor de nivel salen de leerlo.
+Todo lo de esta página se comprobó después contra los bytes de este cartucho, y
+donde su lectura y la nuestra no coincidían, la discrepancia está escrita en
+vez de disimulada.

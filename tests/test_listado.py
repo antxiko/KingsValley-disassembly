@@ -10,6 +10,7 @@ las del arbol y no las que habia cuando se escribio el texto.
 import json
 import os
 import re
+import sys
 import unittest
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -284,6 +285,115 @@ class TestWeb(unittest.TestCase):
         self.assertEqual(codigo + datos, 16384,
                          "%d + %d = %d, y el cartucho son 16384"
                          % (codigo, datos, codigo + datos))
+
+
+def rom_del_listado():
+    """Reconstruye los BYTES DE DATOS del cartucho leyendo el listado.
+
+    El cartucho no viaja con el repositorio, pero src/kingsvalley.asm si, y
+    cada fila de datos lleva su direccion en el comentario -eso lo pone
+    mkasm.py-. Con las filas `defb` y `defw` se rehace un buffer de 16 KB con
+    todas las zonas de datos en su sitio, que es lo unico que el descriptor de
+    nivel necesita leer. Asi estos tests corren en un clon pelado, sin cartucho
+    y sin `make`.
+    """
+    rom = bytearray(FIN - ORG)
+    for linea in lee(ASM).splitlines():
+        m = re.match(r"\s*(defb|defw)\s+([^;]+);\s*([0-9a-f]{4})", linea)
+        if not m:
+            continue
+        que, cuerpo, addr = m.group(1), m.group(2), int(m.group(3), 16)
+        p = addr - ORG
+        for tok in cuerpo.split(","):
+            tok = tok.strip()
+            if not re.fullmatch(r"[0-9][0-9a-fA-F]*h", tok):
+                continue
+            v = int(tok[:-1], 16)
+            if que == "defb":
+                rom[p] = v & 0xFF
+                p += 1
+            else:
+                rom[p] = v & 0xFF
+                rom[p + 1] = (v >> 8) & 0xFF
+                p += 2
+    return bytes(rom)
+
+
+class TestMapas(unittest.TestCase):
+    """El decodificador de piramides de tools/mapas.py.
+
+    Contra la RAM y la VRAM de una maquina de verdad se comprueba con
+    `mapas.py --comprueba` y `mapas.py --vram`, que necesitan los volcados de
+    openMSX y el cartucho. Aqui se comprueba lo que SI se puede sin nada de
+    eso, leyendo el listado publicado.
+    """
+
+    def _mapas(self):
+        sys.path.insert(0, os.path.join(RAIZ, "tools"))
+        import mapas
+        return mapas, rom_del_listado()
+
+    def test_los_descriptores_encajan_uno_detras_de_otro(self):
+        """Cada descriptor de nivel acaba donde empieza el siguiente.
+
+        Es la prueba de que el descriptor se esta leyendo entero y bien: si
+        sobrara o faltara un byte en cualquiera de los ocho bloques -bandas,
+        puertas, momias, gemas, cuchillos, picos, giratorias, trampas,
+        escaleras- la cadena se rompe.
+        """
+        mapas, rom = self._mapas()
+        tramos = sorted((mapas.Descriptor(rom, n).inicio,
+                         mapas.Descriptor(rom, n).fin, n)
+                        for n in range(1, 16))
+        for (_i, fin, nivel), (inicio, _f, siguiente) in zip(tramos,
+                                                             tramos[1:]):
+            self.assertEqual(
+                fin, inicio,
+                "el descriptor del nivel %d acaba en 0x%04X y el del %d "
+                "empieza en 0x%04X" % (nivel, fin, siguiente, inicio))
+
+    def test_los_anchos_son_32_o_64(self):
+        """Las salas impares miden 32 columnas y las pares 64.
+
+        Guardian del error que este proyecto publico: leer el centinela de
+        banda en el byte siguiente en vez de en el actual daba 16 y 48.
+        """
+        mapas, rom = self._mapas()
+        for nivel in range(1, 16):
+            esperado = 32 if nivel % 2 else 64
+            self.assertEqual(
+                mapas.Descriptor(rom, nivel).ancho, esperado,
+                "el nivel %d tendria que medir %d columnas"
+                % (nivel, esperado))
+
+    def test_las_cifras_publicadas_de_cada_piramide(self):
+        """Las gemas, momias y demas que dice la web salen del descriptor."""
+        mapas, rom = self._mapas()
+        gemas = sum(len(mapas.Descriptor(rom, n).gemas) for n in range(1, 16))
+        momias = sum(len(mapas.Descriptor(rom, n).momias)
+                     for n in range(1, 16))
+        self.assertEqual(78, gemas)
+        self.assertEqual(34, momias)
+        for pagina in ("THE-GAME.md", os.path.join("es", "EL-JUEGO.md")):
+            texto = lee(os.path.join(DOCS, pagina))
+            self.assertIn("**78**", texto,
+                          "%s no publica las 78 gemas" % pagina)
+            self.assertIn("**34**", texto,
+                          "%s no publica las 34 momias" % pagina)
+
+    def test_la_web_no_vuelve_a_decir_48_columnas(self):
+        """Ninguna pagina puede volver a publicar los anchos viejos."""
+        malos = []
+        for carpeta, _d, ficheros in os.walk(DOCS):
+            for fn in ficheros:
+                if not fn.endswith((".md", ".html")):
+                    continue
+                texto = lee(os.path.join(carpeta, fn))
+                for frase in ("48 columnas", "48 columns", "384 pixel",
+                              "384 píxel"):
+                    if frase in texto:
+                        malos.append("%s: %s" % (fn, frase))
+        self.assertEqual([], malos, "anchos viejos publicados: %s" % malos)
 
 
 if __name__ == "__main__":

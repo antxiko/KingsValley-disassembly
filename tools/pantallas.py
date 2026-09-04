@@ -159,6 +159,46 @@ def escribe_guion_de_texto(rom, org, vram, guion, borrar=False):
         vram.escribe(0x00 if borrar else b)
 
 
+def _invierte(b):
+    """0x4584: ocho `rr c` / `rla` seguidos dan el byte con los bits del
+    reves. Es un ESPEJO HORIZONTAL de la fila de 8 pixeles, no una copia."""
+    return int('{:08b}'.format(b)[::-1], 2)
+
+
+def voltea_patrones(vram, origen, destino, cuantos):
+    """L_4568 (FlipPatrones en el listado de Pazos): vuelca `cuantos`
+    patrones de 8 bytes invirtiendo cada byte, y lo repite en los TRES
+    tercios de la tabla. OJO: el `pop hl` de 0x457f recupera el origen
+    ORIGINAL, no el avanzado, asi que los tres tercios se leen todos del
+    PRIMERO; sale bien porque el cartucho escribe los tres iguales."""
+    for tercio in range(3):
+        d = destino + tercio * 0x800
+        for i in range(cuantos * 8):
+            vram.arma(d + i)
+            vram.escribe(_invierte(vram.b[(origen + i) & VRAM_MASC]))
+
+
+def voltea_sprites(vram, origen, destino, cuantos):
+    """L_454C (flipSprites): el espejo de un sprite de 16x16 no es solo
+    invertir los bytes, hay que INTERCAMBIAR las dos mitades. Eso lo hace el
+    baile de 0x4556-0x455c: escribe 16 bytes, resta 0x20 a E -o sea retrocede
+    16- y repite mientras el bit 4 de E siga a cero. Por eso pasandole
+    destino=0x1b10 el sprite acaba en 0x1b00 con las columnas cambiadas."""
+    for n in range(cuantos):
+        base_o = origen + n * 0x20
+        e = (destino + n * 0x20) & 0xFF
+        d_alto = (destino + n * 0x20) & 0xFF00
+        i = 0
+        while True:
+            for k in range(0x10):
+                vram.arma(d_alto | ((e + k) & 0xFF))
+                vram.escribe(_invierte(vram.b[(base_o + i) & VRAM_MASC]))
+                i += 1
+            e = (e - 0x10) & 0xFF
+            if e & 0x10:
+                break
+
+
 def franja_de_patrones(vram, direccion, primero, cuantos):
     """escribe_franja_de_patrones (0x4866): indices consecutivos, y devuelve
     la fila siguiente (entrada + 0x20) y el indice siguiente."""
@@ -213,6 +253,10 @@ def png(fn, px, escala=2):
 
 
 TABLA_ATRIBUTOS = 0x5D68
+# tabla_5050_indice: los tres juegos de sprites del jugador (0x51e9 con las
+# manos vacias, 0x52a5 con el cuchillo, 0x53d8 con el pico). Los tres se
+# cargan en la MISMA direccion, 0x1800, asi que solo uno puede estar puesto.
+TABLA_SPRITES_JUGADOR = 0x5050
 
 
 def traduce_celda_a_patron(rom, org, celda):
@@ -261,19 +305,32 @@ def rectangulo(rom, org, vram, guion, direccion, filas, ancho):
             i += 1
 
 
-def vram_de_juego(rom, org):
-    """La VRAM del marco de juego: prepara_sala_nueva (0x4fc9)."""
+def vram_de_juego(rom, org, lleva=0):
+    """La VRAM del juego: prepara_sala_nueva (0x4fc9), EN SU ORDEN, con los
+    dos volteos que antes faltaban. `lleva` es el nibble alto de 0xe144 -el
+    objeto que lleva el jugador: 0 nada, 1 cuchillo, 2 pico-, que es lo que
+    decide cual de los tres juegos de sprites se carga en 0x1800."""
     vram = Vram()
-    guion_x3(rom, org, vram, 0x5613, 0x2200)
-    guion_x3(rom, org, vram, 0x5754, 0x0228)
-    guion_x3(rom, org, vram, 0x57B8, 0x03B8)
+    guion_x3(rom, org, vram, 0x5613, 0x2200)         # patrones del juego
+    guion_x3(rom, org, vram, 0x5754, 0x0228)         # y su color
+    # 0x4ff0: quince patrones volteados de 0x2340 a 0x23b8. Son los que el
+    # juego necesita en espejo: la puerta de salida y las escaleras que van
+    # hacia el otro lado. Sin esto los tiles 0x77-0x85 salen en blanco.
+    voltea_patrones(vram, 0x2340, 0x23B8, 0x0F)
+    guion_x3(rom, org, vram, 0x57B8, 0x03B8)         # el color de los volteados
     hl = 0x2430
     for _ in range(6):
-        guion_x3(rom, org, vram, 0x574A, hl)
+        guion_x3(rom, org, vram, 0x574A, hl)         # la MISMA gema, seis veces
         hl += 8
-    guion_x3(rom, org, vram, 0x57CD, 0x0430)
+    guion_x3(rom, org, vram, 0x57CD, 0x0430)         # y seis colores distintos
     dibuja_guion(rom, org, vram, 0x5571)
-    dibuja_guion(rom, org, vram, 0x5511)
+    dibuja_guion(rom, org, vram, 0x5511)             # la momia, en 0x1940
+    voltea_sprites(vram, 0x1940, 0x1C50, 3)          # 0x502e: la momia en espejo
+    # repinta_marcador (0x5031): el juego de sprites del jugador que toque
+    d = TABLA_SPRITES_JUGADOR + 2 * lleva
+    dibuja_guion(rom, org, vram,
+                 rom[d - org] | (rom[d - org + 1] << 8))
+    voltea_sprites(vram, 0x1800, 0x1B10, 0x0A)       # y sus diez, en espejo
     escribe_guion_de_texto(rom, org, vram, 0x47AA)   # SCORE / HI / REST
     escribe_guion_de_texto(rom, org, vram, 0x480E)   # (c)KONAMI + PYRAMID
     return vram
@@ -500,17 +557,10 @@ def main():
     png(os.path.join(carpeta, "rotulo.png"), recorte, escala=4)
     print("  rotulo    %s" % os.path.join(carpeta, "rotulo.png"))
 
-    px, cuantos = hoja_de_sprites(rom, org)
-    salida = os.path.join(carpeta, "sprites.png")
-    png(salida, px, escala=3)
-    print("  sprites   %s  (%d sprites de 16x16 desde %d guiones)"
-          % (salida, cuantos, len(GUIONES_DE_SPRITE)))
-    for nivel in range(1, 16):
-        px = sala_completa(rom, org, nivel)
-        salida = os.path.join(carpeta, "sala_%02d.png" % nivel)
-        png(salida, px)
-        print("  sala %2d  %s  (%d columnas)"
-              % (nivel, salida, len(px[0]) // 8))
+    # Las salas ya no se dibujan aqui: las dibuja tools/mapas.py, que ademas
+    # de la pared mete las gemas, las escaleras, los picos, los cuchillos, las
+    # puertas y las momias. Y la hoja de sprites la sustituye
+    # tools/figuras.py, que ademas dice que es cada figura.
     for nombre, fn in PANTALLAS:
         vram = fn(rom, org)
         px = revela_screen2(vram)

@@ -42,10 +42,11 @@ TXT = {
               "Python los dos interpretes de guiones que corre el Z80. El "
               "listado y las cifras se reproducen con <code>make</code>, y el "
               "reensamblado devuelve la ROM <b>byte a byte</b>.",
-        claim="La tabla de colores debajo de la de patrones, la posicion del "
-              "explorador en veinticuatro bits, seis listas de entidades con "
-              "seis pasos distintos, y ochenta y siete bytes de codigo "
-              "escondidos detras de un <code>push</code>.",
+        claim="Dos protecciones anticopia que solo se disparan si el "
+              "cartucho corre desde RAM, quince piramides dibujadas byte a "
+              "byte contra la VRAM de una maquina de verdad, y las figuras "
+              "que miran al otro lado, que no estan en la ROM: se fabrican "
+              "dandole la vuelta a los bits.",
         ficha=["Konami - <b>(c) Konami 1985</b>",
                "Cartucho <b>RC-727</b>, 16 KB",
                "MSX1 - <b>pagina 1</b>", "Volcado <b>a8f807a0...</b>"],
@@ -79,10 +80,11 @@ TXT = {
               "script interpreters the Z80 runs. The listing and the numbers "
               "are reproducible with <code>make</code>, and reassembling "
               "gives back the ROM <b>byte for byte</b>.",
-        claim="The colour table underneath the pattern table, the explorer's "
-              "position in twenty-four bits, six entity lists with six "
-              "different strides, and eighty-seven bytes of code hidden "
-              "behind a <code>push</code>.",
+        claim="Two copy protections that only fire if the cartridge runs "
+              "from RAM, fifteen pyramids drawn and matched byte for byte "
+              "against a real machine's VRAM, and the figures facing the "
+              "other way, which are not in the ROM at all: they are made by "
+              "reversing the bits.",
         ficha=["Konami - <b>(c) Konami 1985</b>",
                "An <b>RC-727</b> 16 KB cartridge",
                "MSX1 - <b>page 1</b>", "Dump <b>a8f807a0...</b>"],
@@ -135,7 +137,7 @@ HALLAZGOS = {
          'justo los que <code>lee_celda_de_sala</code> toma como X entera '
          'para mirar celdas.</p>'
          '<p>Hace falta tanta X porque la sala es mas ancha que la pantalla: '
-         'las salas pares miden <b>48 columnas</b>, 384 pixeles, y no caben '
+         'las salas pares miden <b>64 columnas</b>, 512 pixeles, y no caben '
          'en un byte. Cuando el explorador sale por un lateral, la tarea 9 '
          'hace <code>ld (0e139h),bc</code> y le cambia el byte alto en uno: '
          'un salto de <b>256 pixeles</b>, una pantalla entera.</p>'),
@@ -161,16 +163,20 @@ HALLAZGOS = {
          '16.384, comprobado byte a byte. La segunda cuenta algo del diseno '
          'del juego: <b>este cartucho nunca lee de la VRAM</b>. Escribe y se '
          'olvida.</p>'),
-        ('Seis listas de entidades, seis pasos distintos',
+        ('Seis listas de entidades, y que es cada una',
          '<p>El juego lleva seis tablas paralelas de entidades y cada una '
          'tiene su propia rutina de acceso. No hay que suponer el tamano de '
          'cada entrada: esta en la <b>multiplicacion</b>. 0x6A12 hace i, 3i, '
          '7i con B llevando las potencias de dos, o sea paso <b>7</b>; '
          '0x65A5 llega a 9i; 0x5AF6 entra a media cadena y llega a 17i; y '
          '0x73D3 hace 2i, 6i, 22i.</p>'
-         '<p>Las de paso 7 y 9 comparten indice (0xE1F4): son dos bloques de '
-         'campos de la <b>misma</b> entidad, partidos en dos zonas de '
-         'memoria.</p>'),
+         '<p>Leer el descriptor de nivel byte a byte dice que hay en cada '
+         'una: paso 7 las <b>puertas de salida</b> y las <b>puertas '
+         'giratorias</b>, paso 9 las <b>gemas</b> y los <b>muros trampa</b>, '
+         'paso 17 los <b>cuchillos ya lanzados</b> y paso 22 las '
+         '<b>momias</b>. Las de paso 7 y 9 comparten indice, pero no son la '
+         'misma entidad partida en dos: son las puertas y las gemas, y lo '
+         'que comparten es una variable de contador.</p>'),
         ('El parpadeo de los sprites esta repartido a proposito',
          '<p><code>actualiza_tabla_de_sprites</code> escribe siempre los '
          'mismos cuatro sprites en la tabla de atributos, pero empezando '
@@ -197,6 +203,37 @@ HALLAZGOS = {
          '<b>KONAMI</b>, y con la misma suma salen SCORE, HI, REST, PUSH '
          'SPACE KEY, PLAY START, GAME OVER, SOFTWARE y PYRAMID. El 0x00 es '
          'el espacio y el 0x1A el simbolo de copyright.</p>'),
+        ('El cartucho se defiende, dos veces',
+         '<p>Dos rutinas escriben dentro del propio espacio del cartucho, y '
+         'corriendo desde ROM ninguna hace nada. No son codigo muerto: son '
+         '<b>proteccion anticopia</b>, y que no hagan nada es la gracia. Un '
+         'cartucho pirateado es una copia en RAM, y ahi las escrituras si '
+         'cuelan.</p>'
+         '<p><b>0x403E</b> machaca el primer byte de la tarea 1 con un '
+         '<code>pop hl</code> + <code>ret</code>; <b>0x409C</b> escribe DE '
+         'encima de 0x43C0, que es el <b>operando</b> del <code>jp nc</code> '
+         'de 0x43BF. Las identifico <b>Manuel Pazos</b> en su desensamblado '
+         'de 2009; este proyecto tenia una escrita como parche fallido y la '
+         'otra como direccion de relleno.</p>'),
+        ('Esta es la primera version, y hay una segunda',
+         '<p>En <b>0x5817</b> nuestra ROM tiene las tres comparaciones '
+         'sueltas que la segunda compilacion sustituye por dos restas, y la '
+         'firma de la segunda no aparece en ninguno de los 16.384 bytes. Lo '
+         'desensamblado aqui es la <b>version 1</b>, con sus fallos: lanzar '
+         'un cuchillo mientras la puerta se abre corrompe sus tiles, '
+         'lanzarlo pegado a un objeto lo atraviesa, y dos muros trampa estan '
+         'mal colocados.</p>'),
+        ('Cada sala es el doble de ancha de lo que parece',
+         '<p>El <code>pop de</code> de <b>0x6B0E</b> devuelve el puntero a '
+         'la banda que se <b>acaba</b> de desempaquetar, asi que el '
+         '<code>cp 030h</code> de dos instrucciones despues mira ESA banda y '
+         'no la siguiente: la banda 0x3x se dibuja <b>y ademas</b> cierra la '
+         'lista. Leido al reves se pierde una banda por sala.</p>'
+         '<p>El arreglo no es una opinion: el buffer de sala se comparo '
+         'contra la RAM de una maquina de verdad en las quince piramides, '
+         '<b>31.680 celdas sin una diferencia</b>, y las pantallas dibujadas '
+         'contra su VRAM -nombres, patrones, color y sprites-, tambien con '
+         '<b>cero</b>.</p>'),
         ('Si lleva la marca oculta de Konami',
          '<p>Konami escondio su numero de catalogo y el titulo en katakana al '
          'final de muchos cartuchos; lo descubrio <b>Manuel Pazos</b> '
@@ -227,7 +264,7 @@ HALLAZGOS = {
          'the ones <code>lee_celda_de_sala</code> takes as the whole-pixel X '
          'when it looks up a cell.</p>'
          '<p>It needs that much X because a room is wider than the screen: '
-         'the even-numbered rooms are <b>48 columns</b>, 384 pixels, which '
+         'the even-numbered rooms are <b>64 columns</b>, 512 pixels, which '
          'will not fit in a byte. When the explorer walks off the side, task '
          '9 does <code>ld (0e139h),bc</code> and changes the high byte by '
          'one: a <b>256-pixel</b> jump, one whole screen.</p>'),
@@ -253,16 +290,20 @@ HALLAZGOS = {
          'byte by byte. The second one says something about how the game is '
          'built: <b>this cartridge never reads VRAM back</b>. It writes and '
          'forgets.</p>'),
-        ('Six entity lists, six different strides',
+        ('Six entity lists, and what each of them is',
          '<p>The game carries six parallel entity tables and each has its own '
          'accessor. You do not have to guess how big an entry is: it is in '
          'the <b>multiplication</b>. 0x6A12 does i, 3i, 7i with B carrying '
          'the powers of two, so stride <b>7</b>; 0x65A5 reaches 9i; 0x5AF6 '
          'joins the same chain halfway and reaches 17i; and 0x73D3 does 2i, '
          '6i, 22i.</p>'
-         '<p>The stride-7 and stride-9 lists share an index (0xE1F4): they '
-         'are two blocks of fields of the <b>same</b> entity, split across '
-         'two areas of memory.</p>'),
+         '<p>Reading the level descriptor byte by byte says what each one '
+         'holds: stride 7 the <b>exit doors</b> and the <b>revolving '
+         'doors</b>, stride 9 the <b>jewels</b> and the <b>trap walls</b>, '
+         'stride 17 the <b>knives already thrown</b> and stride 22 the '
+         '<b>mummies</b>. The stride-7 and stride-9 lists share an index, but '
+         'they are not one entity split in two: they are the doors and the '
+         'jewels, and what they share is a counter variable.</p>'),
         ('Sprite flicker is shared out on purpose',
          '<p><code>actualiza_tabla_de_sprites</code> always writes the same '
          'four sprites into the attribute table, but each frame it starts '
@@ -283,6 +324,37 @@ HALLAZGOS = {
          '</p><p>That is why the first four rooms are ochre stone and the '
          'next ones change colour with the <b>same brick artwork</b>: the '
          'only thing that changes is eight bytes of colour.</p>'),
+        ('The cartridge defends itself, twice',
+         '<p>Two routines write into the cartridge&rsquo;s own address space, '
+         'and '
+         'from ROM neither does anything. They are not dead code: they are '
+         '<b>copy protection</b>, and doing nothing is the whole point. A '
+         'pirated cartridge is a copy in RAM, and there the writes land.</p>'
+         '<p><b>0x403E</b> smashes the first byte of task 1 with a '
+         '<code>pop hl</code> + <code>ret</code>; <b>0x409C</b> writes DE '
+         'over 0x43C0, which is the <b>operand</b> of the <code>jp nc</code> '
+         'at 0x43BF. <b>Manuel Pazos</b> identified both in his 2009 '
+         'disassembly; this project had one written up as a failed patch and '
+         'the other as a fill address.</p>'),
+        ('This is the first version, and there is a second',
+         '<p>At <b>0x5817</b> our ROM has the three separate comparisons the '
+         'second build replaces with two subtractions, and the second '
+         'build&rsquo;s signature appears nowhere in the 16,384 bytes. What is '
+         'disassembled here is <b>version 1</b>, bugs included: throwing a '
+         'knife while the door opens corrupts its tiles, throwing it against '
+         'an object passes through it, and two trap walls sit in the wrong '
+         'place.</p>'),
+        ('Every room is twice as wide as it looks',
+         '<p>The <code>pop de</code> at <b>0x6B0E</b> restores the pointer to '
+         'the band that has <b>just</b> been unpacked, so the '
+         '<code>cp 030h</code> two instructions later tests THAT band, not '
+         'the next one: the 0x3x band is drawn <b>and</b> ends the list. Read '
+         'the other way round it loses one band per room.</p>'
+         '<p>The fix is not an opinion: the room buffer was compared against '
+         'the RAM of a real machine for all fifteen pyramids, <b>31,680 '
+         'cells with no difference</b>, and the drawn screens against its '
+         'VRAM - name, pattern, colour and sprite tables - also with '
+         '<b>zero</b>.</p>'),
         ('The text is ASCII minus 0x20',
          '<p>The cartridge’s labels are not in ASCII, and not in a '
          'private font with a lookup table either: they are ASCII '
@@ -312,52 +384,62 @@ GALERIA = [
      "the fourteen steps of <code>tarea_0_desplaza_logo</code> write its "
      "twenty-six tiles into the name table, and the text scripts at 0x47FE "
      "and 0x47C1 add SOFTWARE, the copyright and the prompt"),
+    ("sala_01.png",
+     "<b>La primera piramide, entera y con todo dentro</b>: las cuatro gemas "
+     "con sus destellos, las ocho escaleras, el cuchillo del suelo, la puerta "
+     "de salida con su palanca y las dos momias en su sitio de partida. No es "
+     "una captura: es el descriptor del nivel desempaquetado con las mismas "
+     "cuentas que <code>carga_la_sala</code>, y comparado byte a byte contra "
+     "la RAM y la VRAM de una maquina de verdad",
+     "<b>The first pyramid, whole and with everything in it</b>: the four "
+     "jewels with their sparkles, the eight ladders, the knife on the floor, "
+     "the exit door with its lever and the two mummies where they start. Not "
+     "a screenshot: it is the level descriptor unpacked with the same "
+     "arithmetic <code>carga_la_sala</code> uses, and compared byte for byte "
+     "against the RAM and VRAM of a real machine"),
     ("sala_02.png",
-     "<b>La segunda piramide</b>, entera. Las salas pares tienen tres bandas "
-     "de dieciseis columnas: <b>48 en total</b>, mas ancho que la pantalla, y "
-     "de ahi que la X del explorador necesite dos bytes enteros. El dibujo "
-     "sale de desempaquetar bit a bit el patron de pared, igual que "
-     "<code>carga_la_sala</code>",
-     "<b>The second pyramid</b>, whole. Even-numbered rooms have three bands "
-     "of sixteen columns: <b>48 in all</b>, wider than the screen, which is "
-     "why the explorer's X needs two full bytes. The picture comes from "
-     "unpacking the wall pattern bit by bit, exactly as "
-     "<code>carga_la_sala</code> does"),
-    ("sala_06.png",
-     "<b>La sexta piramide</b>, con el mismo dibujo de ladrillo y otro color. "
-     "Lo unico que cambia entre un grupo de cuatro salas y el siguiente son "
-     "los ocho bytes de color que <code>columna_decorativa</code> escribe en "
-     "los tiles 0x40 a 0x44",
-     "<b>The sixth pyramid</b>, same brick artwork, different colour. The "
+     "<b>La segunda piramide.</b> Las salas pares tienen cuatro bandas de "
+     "dieciseis columnas: <b>64 en total, dos pantallas</b>, y de ahi que la "
+     "X del explorador necesite dos bytes enteros. Aqui hay ademas siete "
+     "picos, dos puertas giratorias y dos muros trampa",
+     "<b>The second pyramid.</b> Even-numbered rooms have four bands of "
+     "sixteen columns: <b>64 in all, two screens</b>, which is why the "
+     "explorer's X needs two whole bytes. This one also has seven pickaxes, "
+     "two revolving doors and two trap walls"),
+    ("sala_10.png",
+     "<b>La decima piramide</b>, con el mismo dibujo de ladrillo y otro "
+     "color. Lo unico que cambia entre un grupo de cuatro salas y el "
+     "siguiente son los ocho bytes de color que "
+     "<code>columna_decorativa</code> escribe en los tiles 0x40 a 0x44",
+     "<b>The tenth pyramid</b>, same brick artwork, different colour. The "
      "only thing that changes between one group of four rooms and the next "
      "is the eight bytes of colour <code>columna_decorativa</code> writes "
      "into tiles 0x40 to 0x44"),
-    ("sala_01.png",
-     "<b>La primera piramide.</b> Las salas impares tienen una sola banda de "
-     "dieciseis columnas y caben de sobra en una pantalla: el explorador "
-     "nunca llega a cambiar el byte alto de su X",
-     "<b>The first pyramid.</b> Odd-numbered rooms have a single band of "
-     "sixteen columns and fit inside one screen with room to spare: the "
-     "explorer never gets to change the high byte of his X"),
-    ("sprites.png",
-     "Los <b>64 sprites de 16x16</b> de la tabla 0x1800-0x1FFF, tal como los "
-     "dejan los seis guiones del cartucho que escriben ahi. Se reconocen las "
-     "posturas del explorador andando y picando, la joya y las herramientas. "
-     "Las filas vacias son las que ningun guion localizado llena",
-     "The <b>64 16x16 sprites</b> of the 0x1800-0x1FFF table, as the "
-     "cartridge's six scripts that write there leave them. The explorer's "
-     "walking and digging poses are recognisable, along with the jewel and "
-     "the tools. The empty rows are the ones no located script fills"),
+    ("figuras.png",
+     "<b>Todas las figuras del cartucho, con su nombre.</b> El explorador "
+     "tiene tres juegos de sprites -con las manos vacias, con el cuchillo y "
+     "con el pico- que se cargan en la MISMA direccion de VRAM, y por eso "
+     "solo puede haber uno a la vez. Mirando al otro lado no hay dibujos: se "
+     "fabrican al vuelo dandole la vuelta a los bits. Los rotulos de esta "
+     "lamina estan escritos con la tipografia del propio cartucho",
+     "<b>Every figure in the cartridge, named.</b> The explorer has three "
+     "sprite sets -empty-handed, with the knife and with the pickaxe- that "
+     "load into the SAME VRAM address, which is why only one can be there at "
+     "a time. There is no artwork for facing the other way: it is made on the "
+     "fly by reversing the bits. The captions on this sheet are written in "
+     "the cartridge's own typeface"),
     ("pantalla_de_sala.png",
-     "La <b>pantalla entre salas</b>, con la piramide y sus joyas. La monta "
-     "<code>monta_pantalla_de_sala</code> (0x773C) con tres guiones: dos para "
-     "los patrones y el color, y el tercero -0x7908- para los sprites, que "
-     "empieza por el word 0x1F20 y por eso va a la tabla de sprites",
-     "The <b>between-rooms screen</b>, with the pyramid and its jewels. "
-     "<code>monta_pantalla_de_sala</code> (0x773C) builds it from three "
+     "El <b>mapa del valle</b>: las quince piramides y el rotulo GOAL. No es "
+     "una lista de niveles sino un <b>anillo</b>, y cada puerta de cada "
+     "piramide lleva escrito a cual de ellas lleva. Lo monta "
+     "<code>monta_el_mapa_del_valle</code> (0x773C) con tres guiones: dos "
+     "para los patrones y el color, y el tercero -0x7908- para los sprites",
+     "The <b>valley map</b>: the fifteen pyramids and the GOAL sign. It is "
+     "not a list of levels but a <b>ring</b>, and every door in every pyramid "
+     "carries the number of the pyramid it leads to. "
+     "<code>monta_el_mapa_del_valle</code> (0x773C) builds it from three "
      "scripts: two for the patterns and colour, and the third -0x7908- for "
-     "the sprites, which starts with the word 0x1F20 and so lands in the "
-     "sprite table"),
+     "the sprites"),
     ("pantalla_final.png",
      "La <b>pantalla final</b>, con sus rotulos que se estiran. No son un "
      "dibujo: <code>rotulo_horizontal</code> (0x76A7) escribe un tile de "

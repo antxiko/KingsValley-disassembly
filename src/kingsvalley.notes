@@ -322,7 +322,7 @@ L 0x6aec byte_a_bits  Un byte fuente, sus 8 bits convertidos en 8 celdas
 L 0x6af0 vuelca_un_bit  `rl c` saca primero el bit MAS significativo; 0->hueco (0x00), 1->pared (0x12)
 C 0x6b00 avanza DE 0x50 mas alla de lo que ya sumaron los 16 `inc de` de la fila: el salto real entre filas es 16+80=0x60, no 0x50 (verificado contra RAM real, ver .notes mas abajo)
 C 0x6b09 banda siguiente: IX += 0x10 (16 columnas mas alla, ver mapa_de_sala en graficos.py)
-C 0x6b10 mira el SIGUIENTE byte sin gastar el puntero: si su nibble alto es 3, no hay mas bandas (fin de la sala)
+C 0x6b10 CUIDADO: el `pop de` de 0x6b0e ha devuelto el puntero a la banda que se ACABA de desempaquetar, asi que aqui se relee ESA banda, no la siguiente. O sea que la banda cuyo nibble alto vale 3 se dibuja Y ADEMAS cierra la lista: las salas tienen una banda mas de las que parece -32 columnas las impares y 64 las pares, no 16 y 48-. Comprobado contra la RAM de una maquina de verdad, 31.680 celdas sin una diferencia (tools/omsx_dump_mapa.tcl y tools/mapas.py --comprueba)
 #
 # L_6DA0 (llamada desde carga_la_sala en 0x6aa7): YA resuelta en la seccion
 # "RESUELTO: los 36 B de 0x6dc4" de mas arriba -aqui solo se pone en .notes
@@ -336,8 +336,17 @@ L 0x6d41 palabra_de_tabla  HL = palabra de 16 bits en (tabla base=HL) + A; el mi
 C 0x6d44 lee la palabra completa: byte bajo primero (A=(HL)), luego byte alto (H=(HL+1))
 L 0x6d92 borra_sala  Rellena 0xE760-0xF000 (0x8A0 = 2208 bytes) de 0x14: el fondo que el desempaquetado de carga_la_sala deja donde no llega ninguna banda
 C 0x6d98 0x8A0 = 2208 bytes hasta 0xF000; pero empieza en 0xE760, 0x60 (una fila) DESPUES de donde escribe la banda 0 (0xE700): la fila 0 del buffer nunca se borra aqui -SUPOSICION: no hace falta, porque el desempaquetado siempre reescribe sus propias columnas de la fila 0 antes de leerlas-
-D 0x6d68 0x6d92 tabla_de_habitaciones  21 punteros (15 indexados por nivel via 0xE054, los ultimos 4 reutilizados como tipos de pared 0-3); confirmada leyendo y con watchpoint en openMSX
+# CORRECCION (2026-09-04): el bloque llegaba hasta 0x6d92 y decia "21
+# punteros", pero 15 niveles mas 4 tipos de pared son DIECINUEVE. Los
+# cuatro bytes que sobraban -que leidos como words daban los falsos
+# punteros 0x4140 y 0x4200- no son punteros: son los tres patrones del
+# destello de una gema mas el hueco que deja la gema en medio, y los usa
+# el bucle que siembra las gemas al montar la sala.
+D 0x6d68 0x6d8e tabla_de_habitaciones  19 punteros: 15 indexados por nivel via 0xE054 y los 4 ultimos reutilizados como base de cada tipo de pared; confirmada leyendo y con watchpoint en openMSX
 F 0x6d68 w
+
+D 0x6d8e 0x6d92 brillos_de_la_gema  Los cuatro bytes que rodean a una gema al sembrarla: 0x40 el destello de arriba, 0x41 el de la izquierda, 0x00 el hueco donde va la propia gema y 0x42 el destello de la derecha. Los copia el bucle de 0x6795 una fila por encima y luego a los lados
+F 0x6d8e 1
 
 D 0x5dca 0x5e7a patrones_pared_tipo0  4 patrones de pared de 44 bytes (22 filas x 2 bytes, 1 bit/celda), tipo de pared 0 de tabla_de_habitaciones
 F 0x5dca 44
@@ -605,7 +614,7 @@ C 0x407d ldir borra 0xe000-0xe6ff (0x700 bytes) de un tiron: toda la zona de tra
 C 0x408f prepara_pantalla antes de abrir interrupciones
 C 0x4099 ei: a partir de aqui la interrupcion puede saltar en cualquier momento
 L 0x409a bucle_muerto  El programa "principal" no hace nada mas: todo el juego pasa a vivir dentro de la interrupcion (mismo patron que BUCLE_MUERTO en skyjaguar.notes)
-C 0x409c guarda DE como direccion de arranque del relleno de VRAM que sigue (usado por la rutina de escritura rapida por puerto, sin explorar en detalle todavia) y salta directo a ella
+C 0x409c LA SEGUNDA PROTECCION ANTICOPIA: escribe DE encima de 0x43c0, que no es un dato sino el OPERANDO del `jp nc,cierra_aviso_titulo` de 0x43bf. En ROM no pasa nada; desde RAM el dibujo del titulo salta a donde diga DE. Es VRAM_writeAC en el desensamblado de Manuel Pazos
 L 0x40a3 avanza_un_cuadro  Lo que interrupcion llama cada VBLANK: sube el contador de fotogramas (0xe003) y, si 0xe002 no tiene el bit 6 puesto, pasa antes por 0x4644 (llamada condicional fabricada con push hl+ret, confirmado: 0x4644 acaba en ret) antes de despachar la tarea activa
 C 0x40a3 0xe003: contador de fotogramas, +1 cada interrupcion; el motor de sonido lo usa como compuerta de "cada 8 cuadros" (and 007h/ret nz) en varios sitios
 C 0x40a7 BC=(0xe000): C=indice de la tarea activa (0-10, indexa tabla_de_tareas), B=su subcontador interno
@@ -644,10 +653,18 @@ F 0x45c0 8
 # hardware real como en la emulacion. Resuelve el misterio de "por que hace
 # lo mismo cada vez sin leer ningun estado": porque no hace nada en
 # absoluto, el `ld (hl),a` sobre ROM es un no-op silencioso.
-L 0x403e intento_de_parche_muerto  Copia el byte de 0x404c (0xe1, "pop hl") sobre el primer byte de la tarea 1 (0x40e4) y un 0xc9 (ret) detras -en teoria la neutraliza-, pero 0x40e4 cae en ROM: la escritura no tiene ningun efecto, medido en caliente (tools/omsx_check_4644.tcl, 92 ejecuciones, el byte nunca cambia)
-C 0x403e HL=0x40e4: el destino cae en ROM, de solo lectura
-C 0x4041 A = byte de 0x404c (0xe1, "pop hl", el propio opcode de despacha_tabla_siguiente)
-C 0x4044 escribe A en 0x40e4 y 0xc9 en 0x40e5: intento de parche que la ROM ignora en silencio
+# CORRECCION (2026-09-04): esto NO es un parche fallido, es una PROTECCION
+# ANTICOPIA, y la escritura sobre ROM es justo el punto. Lo identifico
+# Manuel Pazos en su desensamblado de 2009 (ReadKeys_AC,
+# https://github.com/GuillianSeed/Kings-Valley) y aqui esta comprobado byte
+# a byte: si el cartucho se copia a RAM y se ejecuta desde ahi -que es como
+# se piratea un cartucho- la escritura SI cuela, la tarea 1 (el titulo)
+# queda machacada con `pop hl` + `ret` y el juego se rompe. En ROM no pasa
+# nada. El cartucho lleva DOS trampas de estas: esta y la de 0x409c.
+L 0x403e proteccion_anticopia_tarea_1  Proteccion anticopia: machaca el primer byte de la tarea 1 (0x40e4) con el 0xe1 ("pop hl") que hay en 0x404c y le pone un 0xc9 (ret) detras. Corriendo desde ROM la escritura no hace nada -medido en caliente, tools/omsx_check_4644.tcl, 92 ejecuciones y el byte nunca cambia-; corriendo desde RAM revienta el titulo. Es ReadKeys_AC en el desensamblado de Manuel Pazos
+C 0x403e HL=0x40e4: el arranque de la tarea 1, que en un cartucho de verdad es ROM y no se deja escribir
+C 0x4041 A = byte de 0x404c (0xe1, "pop hl", el propio opcode de despacha_tabla_siguiente): la trampa se sirve de un byte que ya estaba
+C 0x4044 escribe A en 0x40e4 y 0xc9 en 0x40e5: en ROM es un no-op silencioso, en RAM deja la tarea 1 en "pop hl / ret"
 
 # --- Comentarios de rutinas (tanda 10, 2026-09-03): el arranque completo ---
 # (logo Konami -> titulo -> demo -> reinicio) y el interprete de guiones que
@@ -755,7 +772,7 @@ C 0x4320 ldir copia los 7 bytes
 
 # --- revisa_teclado_y_salta_menu: el camino RAPIDO (pulsar tecla), medido ---
 L 0x4644 revisa_teclado_y_salta_menu  Se cuela cada fotograma mientras 0xe002 bit 6 siga a 0: revisa si hay alguna tecla recien pulsada y, si la hay, salta a mano el logo/el aviso de titulo en vez de esperar a que la cascada de fotogramas de la tarea 0/1 termine sola. Verificado en caliente (tools/omsx_task_trace.tcl): las unicas transiciones 0->1 y 1->3 de 90 s de menu+demo tienen el PC en 0x4663 y 0x4679, dentro de esta rutina
-C 0x4644 primero, el parche muerto de la tanda 5 (no hace nada, ver intento_de_parche_muerto)
+C 0x4644 primero, la proteccion anticopia de 0x403e: desde ROM no hace nada, desde RAM machaca la tarea 1
 C 0x4647 HL=0xe041: la muestra de teclado guardada la vez anterior
 C 0x464a compara la muestra nueva (A -SUPOSICION: se asume dejada por el codigo de mas arriba en el mismo fotograma, no se ha confirmado quien la deja-) con la guardada y devuelve solo los bits recien pulsados (flanco de subida)
 C 0x464d sin ninguna tecla nueva, no hay nada que forzar
@@ -816,7 +833,7 @@ C 0x40d7 desplaza el logo un paso (tarea_0_desplaza_logo); si sigue desplazando,
 C 0x40db con el desplazamiento parado, dibuja el guion de 0x47fe (formato CON direccion)
 C 0x40e2 fin de esta etapa: solo suma 1 al "orden" (0xe001), NO cambia de tarea
 
-L 0x40e4 tarea_0_borra_y_r7  Etapa intermedia de la cascada: se alcanza cuando el subcontador de la etapa anterior llega a 0. Es tambien el destino del parche muerto de la tanda 5 (intento_de_parche_muerto intenta neutralizar el PRIMER byte de aqui, sin efecto porque cae en ROM)
+L 0x40e4 tarea_0_borra_y_r7  Etapa intermedia de la cascada: se alcanza cuando el subcontador de la etapa anterior llega a 0. Es tambien la VICTIMA de la proteccion anticopia de 0x403e, que intenta machacar el PRIMER byte de aqui: en un cartucho de verdad esto es ROM y la escritura no cuela, en una copia en RAM si
 C 0x40e4 igual que arriba: lo normal es caer en la etapa "en marcha" real (tarea_0_dibuja_o_avanza)
 C 0x40e9 la vez que TAMBIEN se agota: contador propio de esta etapa (0xe004)
 C 0x40eb limpia 768 bytes de VRAM en 0x7800 (rellena_vram)
@@ -1123,14 +1140,14 @@ C 0x4c77 HL avanza a 0xe136 y guarda ahi la direccion nueva (bit 0 = a que lado 
 C 0x4c79 A = el estado del jugador otra vez
 C 0x4c7c salta a la entrada que le toque de tabla_4c7f (7 estados)
 
-L 0x4c8d estado_0_jugador_en_pie  Estado 0: el jugador esta de pie o andando. Con el bit 4 de 0xe008 puesto reparte segun el nibble alto de 0xe144; si no, sigue por el camino normal de andar. SUPOSICION en el significado exacto de 0xe008 bit 4 y de 0xe144
+L 0x4c8d estado_0_jugador_en_pie  Estado 0: el jugador esta de pie o andando. Con el bit 4 de 0xe008 puesto (el boton) reparte segun lo que lleve en las manos, que dice el nibble alto de 0xe144: 0 nada, 1 el cuchillo -y lo lanza-, 2 el pico -y pica-. Si no, sigue por el camino normal de andar
 C 0x4c8d (0xe008) bit 4: SUPOSICION, marca que hay una accion en curso que atender antes que el andar normal
 C 0x4c92 sin accion pendiente: al camino normal de andar
-C 0x4c94 (0xe144), nibble alto: SUPOSICION, el tipo de accion pendiente
+C 0x4c94 (0xe144), nibble alto: el OBJETO QUE LLEVA EL JUGADOR -0 nada, 1 el cuchillo, 2 el pico-, que es lo que decide que hace el boton
 C 0x4c99 nibble alto 0: a 0x4d50
-C 0x4c9c nibble alto 1: a 0x4dbf, el pico
-C 0x4c9e cualquier otro: a 0x4e9f
-L 0x4ca4 jugador_anda_o_cae  El camino normal del estado 0: si no hay suelo bajo los pies arranca la caida; si lo hay, aplica el movimiento y, cuando lleva 16 fotogramas seguidos empujando contra un bloque del tipo 0x5x, pasa al estado 6 con el efecto 0x03
+C 0x4c9c nibble alto 1: lleva el CUCHILLO, y el boton lo lanza (0x4dbf)
+C 0x4c9e nibble alto 2: lleva el PICO, y el boton pica (0x4e9f)
+L 0x4ca4 jugador_anda_o_cae  El camino normal del estado 0: si no hay suelo bajo los pies arranca la caida; si lo hay, aplica el movimiento y, cuando lleva 16 fotogramas seguidos empujando contra una PUERTA GIRATORIA (celda del tipo 0x5x), pasa al estado 6 -cruzarla- con el efecto 0x03
 C 0x4ca4 comprueba el suelo bajo los dos pies (hay_suelo_bajo_los_pies); C = no hay suelo
 C 0x4ca7 sin suelo: arranca la caida
 C 0x4caa con suelo: limpia el marcador de 0xe14d
@@ -1195,14 +1212,28 @@ C 0x4d42 (0xe13f) := A, la pose de este fotograma
 #
 #     0x0x  hueco (por donde se anda y se cae)
 #     0x1x  suelo/pared solida  -es el que se comprueba bajo los pies-
-#     0x2x  y 0x3x  las celdas que disparan el movimiento en diagonal
-#     0x5x  el bloque que se puede picar (subtipos 1 y 2)
+#     0x2x  y 0x3x  PELDANOS de escalera (0x20/0x21 bajan a la derecha,
+#                   0x22/0x23 a la izquierda; 0x15-0x18 son el arranque
+#                   sobre la plataforma). Son las unicas que aceptan el
+#                   movimiento en diagonal, que es subir o bajar la escalera
+#     0x4x  gema (0x43-0x48, un identificador por color) y sus tres
+#           destellos (0x40 arriba, 0x41 izquierda, 0x42 derecha)
+#     0x5x  PUERTA GIRATORIA (0x50/0x51 gira de izquierda a derecha,
+#           0x52/0x53 al reves)
+#     0x6x  y 0x7x  la puerta de salida y la palanca que la abre
+#     0x8x  el pico
+#     0x3x tambien lleva el cuchillo posado (0x30, y 0x31/0x32 si ha caido
+#           sobre un peldano)
 #
-# La clasificacion sale de COMO se usan, no de mirarlas: 0x1x es lo que
-# hay_suelo_bajo_los_pies exige para no caerse, 0x5x es lo que
-# jugador_anda_o_cae exige para dejar picar, y 0x2x/0x3x son las dos
-# unicas que aceptan mueve_en_diagonal. Los nombres de "que dibujo tiene
-# cada tipo" quedan como SUPOSICION hasta dibujarlos.
+# CORRECCION (2026-09-04): antes aqui ponia que 0x5x era "el bloque que se
+# puede picar". No lo es: es la PUERTA GIRATORIA. Lo que hace
+# jugador_anda_o_cae al detectar 16 fotogramas de empuje contra un 0x5x no
+# es picar, es pasar por la puerta -estado 6-. Y lo que se pica son los
+# ladrillos, tipo 0x1x. Los nombres de cada tipo ya no son suposicion: las
+# quince salas estan dibujadas desde estos identificadores con
+# tools/mapas.py y comparadas byte a byte contra la VRAM de una maquina de
+# verdad, sin una sola diferencia. Los nombres vienen del desensamblado de
+# Manuel Pazos (indexTiles, https://github.com/GuillianSeed/Kings-Valley).
 
 L 0x4d50 estado_0_accion_tipo_0  Rama del estado 0 con el nibble alto de 0xe144 a cero: si el jugador tiene Y valida y la celda que mira (L_7428) no es del tipo 0x1x, guarda la entrada cruda en 0xe143 y salta al despachador de 0x70cf
 C 0x4d50 HL = 0xe137, la Y del jugador
@@ -1239,18 +1270,18 @@ C 0x4db3 con NZ: solo la animacion de andar
 C 0x4db6 con Z: A := 0 y salta los dos bytes de DATA_resto_4db9 para entrar en guarda_estado
 L 0x4dbb guarda_estado  Guarda en 0xe134 el estado que trae A. Entrada compartida, alcanzada saltando los dos bytes muertos de DATA_resto_4db9
 C 0x4dbb (0xe134) := A, el estado nuevo del jugador
-L 0x4dbf pico_busca_bloque  Rama del estado 0 para el pico: mira la celda a un lado (offset -1 o +0x12 en X segun a que lado mire) y, si NO es del tipo que se pica, arranca el picado (estado 4, contador 0x15); si lo es, exige ademas que la X este alineada a 4 y mira dos pixeles mas alla, contando el hallazgo en 0xe131
+L 0x4dbf cuchillo_busca_sitio  Rama del estado 0 cuando el jugador lleva el CUCHILLO: mira si tiene sitio para lanzarlo -la celda a un lado, offset -1 o +0x12 en X segun a que lado mire- y, si no hay pared, arranca el lanzamiento (estado 4, contador 0x15); si hay pared, exige ademas que la X este alineada a 4 y mira dos pixeles mas alla, por si le cabe el cuchillo por encima. CORRECCION (2026-09-04): esto se llamaba "pico_busca_bloque" y no es el pico, es el cuchillo -el nibble 1 de 0xe144 es el cuchillo, y el juego de sprites que carga es GFX_ProtaKnife-
 C 0x4dbf (0xe131) := 0: el contador de "bloques encontrados" de esta pasada
 C 0x4dc3 HL = 0xe136, a que lado mira; HL avanza a 0xe137 para la comprobacion
 C 0x4dc8 bit 0: a que lado mira
 C 0x4dc9 mirando a un lado, B = -1 (un pixel a la izquierda)
 C 0x4dce mirando al otro, B = +0x12 (18 pixeles a la derecha, el ancho del muneco)
 C 0x4dd1 mira la celda con ese desplazamiento; Z = es del tipo 0x1x
-C 0x4dd5 tipo 0x1x: sigue afinando en 0x4de4
-C 0x4dd7 no es 0x1x: (0xe145) := 0x15, el contador del picado
-C 0x4dde estado := 4, el del pico
+C 0x4dd5 hay pared: sigue afinando en 0x4de4, a ver si cabe por encima
+C 0x4dd7 no hay pared: (0xe145) := 0x15, el contador de la animacion de lanzar
+C 0x4dde estado := 4, el de lanzar el cuchillo
 C 0x4de1 y la pose 8
-L 0x4de4 pico_afina_alineacion  Continuacion de pico_busca_bloque cuando la celda de al lado era del tipo 0x1x: solo deja picar con la X alineada a 4 dentro de la celda, y vuelve a mirar dos pixeles mas atras; si tambien es solida, cuenta uno en 0xe131 y arranca el picado igual
+L 0x4de4 cuchillo_afina_alineacion  Continuacion de cuchillo_busca_sitio cuando la celda de al lado era pared: solo deja lanzar con la X alineada a 4 dentro de la celda, y mira una fila mas arriba por si hay hueco -el caso de estar metido en un agujero con sitio libre sobre la cabeza-; si tambien es solida, cuenta uno en 0xe131 y lanza igual
 C 0x4de4 C -= 1: el ajuste de fila baja uno
 C 0x4de5 HL = 0xe139, la X del jugador
 C 0x4de9 X mod 8, comparado con 4: solo vale la posicion alineada a media celda
@@ -1259,7 +1290,7 @@ C 0x4dee HL vuelve a 0xe137 para la segunda comprobacion
 C 0x4df0 mira otra vez con el ajuste ya bajado
 C 0x4df3 C = 0 quiere decir que tambien era solida
 C 0x4df6 (0xe131)++: cuenta que hay bloque a los dos lados
-L 0x4dfc estado_4_picando  Estado 4 (picando): mientras el bit 4 de 0xe145 siga puesto cuenta atras; al llegar a nibble bajo 0 crea una entidad nueva (el trozo picado) copiando la posicion del jugador desplazada, y deja la pose 9 (o la 8 si no hubo bloque doble)
+L 0x4dfc estado_4_lanza_el_cuchillo  Estado 4 (lanzando el cuchillo): mientras el bit 4 de 0xe145 siga puesto cuenta atras; al llegar a nibble bajo 0 crea una entidad nueva -EL CUCHILLO QUE SALE VOLANDO- copiando la posicion del jugador desplazada, y deja la pose 9 (o la 8 si no hubo sitio doble)
 C 0x4dfc HL = 0xe145, el contador del picado
 C 0x4dff bit 4 puesto = todavia en la primera mitad del golpe
 C 0x4e03 cuenta atras un fotograma
@@ -1281,11 +1312,11 @@ L 0x4e45 pose_8  Fija la pose 8. Entrada compartida por las dos ramas del pico
 C 0x4e45 A := 8, la pose del pico
 L 0x4e47 guarda_pose_y_vuelve  Guarda A en 0xe13f (la pose) y vuelve. Igual que guarda_pose, pero con su propio ret
 C 0x4e47 (0xe13f) := A
-L 0x4e4b estado_4_termina  Segunda mitad del picado (bit 4 de 0xe145 ya a cero): cuenta atras hasta 0 y devuelve el jugador al estado 0, limpiando 0xe144
+L 0x4e4b estado_4_termina  Segunda mitad del lanzamiento (bit 4 de 0xe145 ya a cero): cuenta atras hasta 0 y devuelve el jugador al estado 0, limpiando 0xe144 -o sea, dejando de llevar el cuchillo, que ya ha salido volando-
 C 0x4e4b HL = 0xe145, el contador
 C 0x4e4e mientras no llegue a 0, nada
 C 0x4e51 estado := 0, otra vez en pie
-L 0x4e56 estado_5_empujando  Estado 5: cuenta atras 0xe145; en los fotogramas intermedios alterna la pose entre 8 y 9, y cada vez que el nibble bajo llega a 0 avanza el paso -restando 3 a 0xe148 y llamando a 0x68e5 en la fase larga-. Cuando 0xe148 se agota, remata con 0x4faa, pose 1 y vuelta al estado 0
+L 0x4e56 estado_5_picando  Estado 5 (PICANDO con el pico): cuenta atras 0xe145; en los fotogramas intermedios alterna la pose entre 8 y 9, y cada vez que el nibble bajo llega a 0 avanza el paso del agujero -restando 3 a 0xe148 y llamando a 0x68e5 en la fase larga-. Cuando 0xe148 se agota, remata con 0x4faa, pose 1 y vuelta al estado 0
 C 0x4e56 HL = 0xe145, el contador de la accion
 C 0x4e59 cuenta atras un fotograma
 C 0x4e5b nibble bajo: en los fotogramas intermedios solo cambia la pose
@@ -1304,7 +1335,7 @@ C 0x4e98 A := 0
 L 0x4e99 guarda_accion_pendiente  Guarda A en 0xe144 (la accion pendiente) y repinta el marcador que dibuja 0x5031
 C 0x4e99 (0xe144) := A
 C 0x4e9c y repinta el marcador correspondiente
-L 0x4e9f estado_0_accion_otra  Rama del estado 0 con el nibble alto de 0xe144 distinto de 0 y 1. Exige suelo, prueba 0x51b5/0x51b6 con la direccion invertida y, segun el resultado, calcula una posicion candidata en el scratch de 0xe149
+L 0x4e9f pico_busca_donde_picar  Rama del estado 0 cuando el jugador lleva el PICO (nibble alto de 0xe144 = 2). Exige suelo, prueba 0x51b5/0x51b6 con la direccion invertida y, segun el resultado, calcula en el scratch de 0xe149 la celda que va a picar
 C 0x4e9f HL = 0xe137, la posicion del jugador
 C 0x4ea2 sin suelo bajo los pies, no hace nada
 C 0x4ea6 HL = 0xe136, la direccion
@@ -1337,6 +1368,8 @@ C 0x4efc HL += 0x60 = 96: una fila mas abajo en el buffer de sala
 C 0x4f02 si esa es del tipo 0x5x, no vale
 C 0x4f05 HL -= 0xC0 = 192: dos filas mas arriba de donde estaba
 C 0x4f0a tipo 0x0x (hueco) o 0x2x: cualquier otro no vale
+C 0x4f0c UN SALTO A MEDIA INSTRUCCION: `jr z,$+3` no cae en el `cp 020h` de 0x4f0e sino en su SEGUNDO byte, y ahi el 0x20 se decodifica como `jr nz,...`. Como se llega con Z puesto, ese `jr nz` nunca salta y el efecto es saltarse la comprobacion. Rareza del programador original, no un fallo
+
 C 0x4f11 estado := 5, el de empujar
 C 0x4f18 bit 0 de 0xe136: a que lado mira
 C 0x4f1d A = la X, que hay que realinear
@@ -1362,7 +1395,7 @@ C 0x4f7e si esa celda es del tipo 0x1x, deja la candidata como esta
 C 0x4f86 si no: la Y de la candidata baja 8 pixeles (una celda)
 C 0x4f8b y el empuje se acorta a 9 pasos
 C 0x4f8e efecto de sonido 0x45, el de activar algo
-L 0x4f93 estado_6_espera_larga  Estado 6: cada dos fotogramas cuenta atras 0xe145; mientras dura, avanza la animacion de andar; al agotarse vuelve al estado 0
+L 0x4f93 estado_6_puerta_giratoria  Estado 6 (PASANDO POR UNA PUERTA GIRATORIA): cada dos fotogramas cuenta atras 0xe145; mientras dura, avanza la animacion de andar -el jugador cruza la puerta-; al agotarse vuelve al estado 0
 C 0x4f93 bit 0 del contador de fotogramas: solo actua uno de cada dos
 C 0x4f99 HL = 0xe145, el contador de la fase
 C 0x4f9c cuenta atras
@@ -1388,7 +1421,7 @@ C 0x4fd3 pone el primer byte a 0...
 C 0x4fd4 ...y el ldir arrastra ese 0 por los cinco siguientes
 C 0x4fd6 el guion 0x5613 en VRAM 0x2200
 C 0x4fdf el guion 0x5754 en VRAM 0x0228
-C 0x4fee C = 15 filas para la copia de bloque de 0x4568
+C 0x4fee C = 15 PATRONES a voltear con 0x4568: los tiles 0x68-0x76 (la puerta de salida, la palanca y las escaleras) se copian del reves a 0x77-0x85. El cartucho no guarda esos dibujos dos veces: los fabrica al vuelo
 C 0x4ff3 el guion 0x57b8 en VRAM 0x03b8
 C 0x4ffc seis repeticiones del mismo guion, una cada 8 filas
 L 0x5001 repite_franja_seis_veces  Bucle que dibuja el guion 0x574a seis veces, bajando 8 filas de VRAM en cada vuelta
@@ -1397,11 +1430,11 @@ C 0x5006 lo dibuja en los tres tercios
 C 0x500b la vuelta siguiente, 8 filas mas abajo
 C 0x5011 rematado el bucle, el guion 0x57cd en VRAM 0x0430
 C 0x501a dos guiones mas con su direccion incluida
-C 0x502c C = 3 filas para la ultima copia de bloque
-L 0x5031 repinta_marcador  Repinta el marcador de 0xe144: usa su nibble alto como indice de tabla_5050_indice (tres guiones posibles) y lo dibuja en VRAM 0x1800, rematando con una copia de bloque de 10 filas a 0x1b10
-C 0x5031 A = (0xe144), la accion pendiente
+C 0x502c C = 3 SPRITES a voltear: la momia de 0x1940 se copia en espejo a 0x1c50, o sea al patron 0x88
+L 0x5031 carga_sprites_del_jugador  Carga el juego de sprites que corresponde a lo que el jugador lleva en las manos: el nibble alto de 0xe144 indexa tabla_5050_indice -0x51e9 con las manos vacias, 0x52a5 con el cuchillo, 0x53d8 con el pico- y lo dibuja en VRAM 0x1800, rematando con el volteo de sus diez sprites a 0x1b10, que es el patron 0x60. Los tres se cargan en la MISMA direccion: en la VRAM solo puede haber uno
+C 0x5031 A = (0xe144), el objeto que lleva el jugador
 C 0x5034 tres rra y &0x1e: el nibble alto pasa a indice de palabra (x2)
-C 0x5039 HL = tabla_5050_indice, los tres punteros a guion
+C 0x5039 HL = tabla_5050_indice, los tres juegos de sprites: manos vacias, cuchillo, pico
 C 0x503c HL = el guion que toca
 C 0x5040 destino: VRAM 0x1800
 C 0x5044 lo dibuja
@@ -1569,7 +1602,7 @@ C 0x5b19 base 0x3800 de la tabla de nombres
 C 0x5b1b H = la parte alta ya completa
 C 0x5b1c recupera las banderas del llamador intactas
 
-L 0x5af6 campo_de_entidad_17  Devuelve en HL la direccion del campo A de la entidad activa de la lista de 17 bytes (base 0xE264, indice en 0xE262), y en A su contenido. El paso 17 sale de la cadena 2i-4i-8i-16i mas i
+L 0x5af6 campo_de_cuchillo  Devuelve en HL la direccion del campo A del CUCHILLO activo (base 0xE264, 17 bytes por cuchillo, indice en 0xE262) y en A su contenido. El paso 17 sale de la cadena 2i-4i-8i-16i mas i. La lista de 17 bytes son los cuchillos que el explorador ha lanzado: hasta cuatro
 C 0x5af6 BC se conserva: los llamadores lo usan como parametro propio
 C 0x5af7 HL = 0xE264, la base de la lista de 17 bytes
 C 0x5afa HL += el numero de campo que trae A
@@ -1898,7 +1931,7 @@ C 0x76c7 HL += 32: la fila siguiente
 C 0x76cd tope: VRAM 0x3a80
 C 0x76d3 mientras no se pase, otra fila
 
-L 0x773c monta_pantalla_de_sala  Prepara la pantalla que precede a la sala: aparca los sprites, dibuja los guiones de 0x7836, 0x78df y 0x7908, pone a cero el contador de reposo (0xE130) y el de 0xE140, suena el efecto 0x91 y monta los digitos de (0xE054) y (0xE057)
+L 0x773c monta_el_mapa_del_valle  Prepara EL MAPA DEL VALLE, la pantalla que sale entre piramide y piramide: aparca los sprites, dibuja los guiones de 0x7836, 0x78df y 0x7908 -el sendero con las quince piramides y el rotulo GOAL-, pone a cero el contador de reposo (0xE130) y el de 0xE140, suena el efecto 0x91 y monta los digitos de (0xE054) y (0xE057). Las quince piramides no son una lista: son un ANILLO, y cada puerta de cada piramide dice a cual lleva (ver reparte_entidades_de_la_sala)
 C 0x773c aparca todos los sprites del buffer
 C 0x773f el guion 0x7836 en VRAM 0x2600
 C 0x7748 el guion 0x78df en VRAM 0x0600
@@ -2538,7 +2571,7 @@ C 0x6a09 HL = 0xE31E, la base de la lista de bloques
 C 0x6a0c HL += el numero de campo
 C 0x6a0f A = el indice del bloque activo
 
-L 0x69c9 marca_bloque_que_se_abre  Recorre la lista de bloques buscando el que este exactamente donde el jugador esta picando -misma Y y una X a 8 pixeles al lado segun a que lado mire- y le pone el bit 0 del campo 0, que es lo que hace que 0x6938 lo empiece a abrir
+L 0x69c9 marca_el_agujero_que_se_abre  Recorre la lista de agujeros buscando el que este exactamente donde el jugador esta picando -misma Y y una X a 8 pixeles al lado segun a que lado mire- y le pone el bit 0 del campo 0, que es lo que hace que 0x6938 lo empiece a abrir. Picar no rompe un bloque suelto: abre un AGUJERO en el suelo de ladrillo, y por ahi se cuela el explorador y se cuelan las momias
 C 0x69c9 indice de bloque := 0
 L 0x69cd prueba_un_bloque  Cuerpo del bucle: monta la posicion que tendria que tener el bloque para estar donde pica el jugador
 C 0x69cd campo 0 del bloque
@@ -2717,7 +2750,7 @@ C 0x67ae x2: la tabla tiene dos bytes por entrada
 C 0x67af HL = la tabla de punteros de 0x67bf
 C 0x67b2 HL = el guion que toca
 
-L 0x67f2 mueve_la_trampa  Mueve el peligro de la lista de 0xE3FF (SUPOSICION en que es exactamente; lo que si esta medido es que puede MATAR, por la salida de 0x6844). Pone a cero el indice, y segun el campo 0 de la primera entidad reparte entre el camino de 0x6877 y el de bajar por la columna cada 32 fotogramas
+L 0x67f2 mueve_el_muro_trampa  Mueve un MURO TRAMPA de la lista de 0xE3FF: un bloque de ladrillos que se desprende del techo y baja por la columna cada 32 fotogramas, matando lo que pille por delante (la salida de 0x6844). Los trae el descriptor de nivel, dos bytes por trampa, y no estan en el mapa hasta que se disparan. Deja de ser SUPOSICION desde 2026-09-04: lo confirman el descriptor -donde ocupan su propio bloque, ver tools/mapas.py- y el nombre que le da el desensamblado de Manuel Pazos (MurosTrampa)
 C 0x67f2 HL = 0xE3FD, el indice de esta lista
 C 0x67f5 puesto a cero
 C 0x67f8 A = (0xE3FE), cuantas hay
@@ -2843,7 +2876,7 @@ C 0x6d5c A = el byte empaquetado
 C 0x6d5d sus bits 3-7 son la X, alineada a 8
 C 0x6d61 y su bit 0 es la pantalla: el byte alto de la X
 
-L 0x6b1a reparte_entidades_de_la_sala  Segunda mitad de carga_la_sala: deja 0xE1C4 en 4 y recorre las cuatro entradas de la lista de 7 bytes, copiando de cada una la posicion descomprimida y decidiendo con 0x6d49 si aparece o no en esta partida
+L 0x6b1a reparte_entidades_de_la_sala  Segunda mitad de carga_la_sala. Las CUATRO entradas de la lista de 7 bytes son las PUERTAS de la piramide: el 0xFF del descriptor marca la que no existe, la que coincide con (0xE056) es la de entrada -y se pinta abierta- y el resto quedan cerradas o invisibles segun diga 0x6d49, que mira si esa piramide ya se ha pasado. De cada una se guardan ademas la piramide de DESTINO (nibble alto) y la direccion de la flecha del mapa (nibble bajo)
 C 0x6b1a HL = 0xE1C4
 C 0x6b1d := 4, las cuatro entradas fijas de esta lista
 C 0x6b22 B := 0, el contador de las cuatro
@@ -2877,7 +2910,7 @@ C 0x6b6d x3: tres bytes de descriptor por enemigo
 C 0x6b75 copiados de golpe a 0xE14E
 C 0x6b77 DE = 0xE1F3, el tope de la lista de objetos
 C 0x6b7a A = cuantos objetos trae la sala
-L 0x6b7f reparte_un_objeto  Un objeto de la lista de 9 bytes: su campo 0 conserva el nibble alto del descriptor con el bit 0 puesto, su campo 1 vale 1, y la posicion se descomprime
+L 0x6b7f reparte_una_gema  Una GEMA de la lista de 9 bytes: su campo 0 conserva el nibble alto del descriptor -que es su COLOR, de 3 a 8- con el bit 0 puesto para marcarla activa, su campo 1 vale 1, y la posicion se descomprime
 C 0x6b80 A = el byte del descriptor
 C 0x6b81 conserva el nibble alto...
 C 0x6b83 ...y le pone el bit 0
@@ -3518,15 +3551,29 @@ C 0x4494 guarda A: el llamador lo necesita entero
 C 0x4495 cuatro rra: el nibble alto baja
 C 0x4499 B = el nibble alto
 C 0x449d C = el nibble bajo
-L 0x454f copia_fila_de_bloque  Una fila de la copia de bloque de 0x454c: B celdas, y luego el salto de 0x20 con el ajuste del bit 4
-C 0x454f una celda
+# --- los dos volteadores (2026-09-04) ---
+# 0x454c y 0x4568 no son "copias de bloque": son ESPEJOS HORIZONTALES. El
+# nucleo es 0x4584, que da la vuelta a los ocho bits de un byte, y 0x458f,
+# que lee un byte de VRAM, lo invierte y lo escribe en otro sitio. Asi es
+# como el cartucho tiene al explorador y a la momia mirando a los dos lados
+# guardando UNA sola version: las de mirar al otro lado se fabrican al
+# arrancar cada sala. Comprobado: reproduciendo estos dos bucles en
+# tools/pantallas.py, las 2 KB de la tabla de patrones de sprites salen
+# IDENTICAS a las de una maquina de verdad en los quince niveles
+# (tools/mapas.py --vram, 0 diferencias).
+L 0x454c voltea_sprites  Voltea C sprites de 16x16 en la VRAM. El espejo de un sprite de 16x16 no es solo invertir sus bytes: hay que INTERCAMBIAR ADEMAS sus dos mitades, y eso es lo que hace el baile de 0x4556-0x455c, que escribe 16 bytes, retrocede 16 (`sub 020h`) y repite mientras el bit 4 de E siga a cero. Por eso pasandole destino 0x1b10 el sprite acaba en 0x1b00
+L 0x4568 voltea_patrones  Voltea C patrones de 8 bytes en los TRES tercios de la tabla. OJO con el `pop hl` de 0x457f: recupera el origen ORIGINAL, no el avanzado, asi que los tres tercios se leen todos del PRIMERO. Sale bien de milagro, porque el cartucho escribe los tres tercios iguales
+L 0x4584 invierte_los_bits  Da la vuelta a los ocho bits de A: ocho `rr c` que sacan el bit bajo y ocho `rla` que lo meten por arriba. Es el espejo horizontal de una fila de 8 pixeles
+L 0x458f voltea_una_celda_de_vram  Lee un byte de VRAM (RDVRM), le da la vuelta con invierte_los_bits y lo escribe en la direccion de DE (WRTVRM), dejando HL y DE como estaban
+L 0x454f copia_fila_de_bloque  Una fila de voltea_sprites: 16 bytes, y luego el retroceso de 16 que salta a la otra mitad del sprite
+C 0x454f un byte, volteado
 C 0x4553 la columna siguiente
 C 0x4557 el salto de fila: 0x20 hacia atras
 C 0x455a bit 4 de E: decide si sigue en el mismo tercio
 C 0x4561 el destino avanza 0x20
 C 0x4564 y una fila menos
-L 0x456f copia_celda_del_bloque  Una celda de la copia de bloque de 0x4568: origen y destino avanzan a la vez
-C 0x456f copia una celda
+L 0x456f copia_celda_del_bloque  Un byte de voltea_patrones: origen y destino avanzan a la vez
+C 0x456f un byte, volteado
 C 0x4574 hasta acabar la fila
 C 0x4576 y una fila menos
 C 0x457a 0x800: el tercio siguiente de la tabla de patrones

@@ -85,15 +85,12 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 <div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html">The game</a><a href="THE-CARTRIDGE.html">The cartridge</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="IN-THE-EMULATOR.html">In the emulator</a><a href="OPEN-QUESTIONS.html" style=color:var(--tinta)>Open questions</a><a href="es/PREGUNTAS-ABIERTAS.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
 <h1 id="open-questions">Open questions</h1>
 <p>The binary is 100 % explained and every routine has a name. That does not mean everything is understood. What follows is what is still loose, said plainly.</p>
-<h2 id="the-enemy-sprites">The enemy sprites</h2>
-<p>The sprite sheet on the site comes from the cartridge&#x27;s <b>six scripts</b> whose first word falls in 0x1800-0x1FFF, which is where R6 puts the sprite pattern table. Between them they leave the explorer in his poses, the jewel and the tools.</p>
-<p>But the sheet has <b>empty rows in the middle</b>, and the mummies have to be somewhere. The script — or scripts — that load them is still to be located. It may be that they are loaded per room, or from a routine that has not yet been crossed with that address.</p>
-<h2 id="what-exactly-the-0xe3ff-list-is">What exactly the 0xE3FF list is</h2>
-<p><code>mueve_la_trampa</code> (0x67F2) walks a list of nine bytes per entry and sends its elements down the room buffer&#x27;s column. What <b>is</b> measured is that it can kill: the probe at 0x68DA returns true for patterns 0x19 and 0x1A, and from there it leaves by the same door as the enemies.</p>
-<p>What is not settled is <b>what it is</b>. It could be a falling rock, a dart, or something that has not occurred to us. Drawing patterns 0x19 and 0x1A on their own would settle it.</p>
-<h2 id="cell-types-0x2x-and-0x3x">Cell types 0x2x and 0x3x</h2>
-<p>They are classified by <b>how they are used</b>: they are the only two classes <code>mueve_al_jugador</code> accepts for the diagonal step, and <code>sube_un_escalon</code> additionally demands subtypes 0x16 and 0x17. The profile table at 0x5168 (0, −1, −2, −3, −4, −3, −2, −1) draws a V in Y according to the X within the cell.</p>
-<p>But <b>what they look like</b> — whether they are steps, a ramp, a ladder — has not been confirmed by drawing them. The classification by use is solid; the name is not.</p>
+<p>Four questions that used to be on this page are now closed, and the answers are on the other pages: <b>the mummies&#x27; sprites</b> (they are at 0x1940, and the mirrored ones are made at run time, not stored); <b>what cell types 0x2x and 0x3x look like</b> (ladder rungs); <b>what the 0xE3FF list is</b> (the trap walls); and <b>whether the drawn screens match the machine</b> (they do — name table, patterns, colour and sprites, zero differences across the fifteen pyramids).</p>
+<h2 id="which-of-the-two-builds-people-actually-played">Which of the two builds people actually played</h2>
+<p>This cartridge is <b>version 1</b>, and version 2 fixes four bugs in it. Which of the two shipped where, and in what order, is not something the binary can answer — and this series&#x27; rule is not to deduce a release history from a binary. A dump of version 2 next to this one would let the two be compared instruction by instruction, the way another cartridge in this series with two builds was handled.</p>
+<h2 id="what-the-four-dead-entries-in-the-tile-table-were-for">What the four dead entries in the tile table were for</h2>
+<p>The table at 0x5D68 has, in this version, four pointers for cell classes <code>0x9x</code>, <code>0xAx</code>, <code>0xBx</code> and <code>0xCx</code> that no level descriptor ever produces. They point at patterns 0x4E, 0x4F and 0x50 and at two zero bytes. Version 2 deletes them outright.</p>
+<p>Something used those classes at some point in development. What, we do not know.</p>
 <h2 id="how-long-each-stage-of-task-0-lasts">How long each stage of task 0 lasts</h2>
 <p>Task 0&#x27;s cascade has three nested levels of counter and reads fine in the opcodes, but <b>how many frames each stage lasts has not been measured</b>: the emulator test script presses keys from 1.5 seconds in, and <code>revisa_teclado_y_salta_menu</code> always beats the natural wait.</p>
 <p>Measuring it would need a script that touches nothing for the long minute the cycle takes to come round on its own.</p>
@@ -102,8 +99,8 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 <h2 id="0xe130-deduced-but-not-measured">0xE130, deduced but not measured</h2>
 <p>That 0xE130 is the <b>frame counter for the screen at rest</b> is deduced from how it is used: <code>pantalla_en_reposo</code> (0x77B7) increments it once per frame and compares it against 0x58 and 0xE0, and at the second deadline writes 0xE1 into 0xE00D, which is precisely what cuts the demo short. It is corroborated by 0x6718 zeroing it on entering that screen.</p>
 <p>It is consistent along three paths, but <b>no watchpoint has been set</b>. This is flagged because the previous batch had the label &quot;jugador2&quot; recorded there, inherited unverified from the Konami&#x27;s Tennis template, and that label was false. It is worth not replacing one unchecked label with another.</p>
-<h2 id="the-drawn-screens-not-compared-against-vram">The drawn screens, not compared against VRAM</h2>
-<p>None of the new screens — title, rooms with graphics, final screen — has been compared byte for byte against an emulator VRAM dump. They come out recognisable, and the Konami wordmark comes out crisp, which already rules out the R3/R4 reading being inverted. But that is looking, not measuring, and the series&#x27; rule is to measure.</p>
+<h2 id="sound">Sound</h2>
+<p>The music and effect tables are located and named — <code>SFX_Momia</code>, <code>MUS_Ingame</code>, <code>MUS_GameOver</code> and a dozen more — but the driver&#x27;s own format has not been taken apart, and nothing has been compared against the PSG registers of a running machine.</p>
 <h2 id="the-first-script-at-0x47fe">The first script at 0x47FE</h2>
 <p>The stretch 0x47FE-0x480D is a graphics script that writes a decorative bar and the word SOFTWARE. Its <b>first five bytes</b> (0x0C, 0x7A, 0x16, 0x00, 0x88) are not letters: they are tile indices for some ornament. What they draw has not been looked at.</p>
 <h2 id="and-the-usual-one">And the usual one</h2>
