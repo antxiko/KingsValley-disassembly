@@ -1,7 +1,7 @@
 # En el emulador
 
 Leer opcodes no basta para todo. Algunas cosas sólo se pueden cerrar mirando lo
-que la máquina hace de verdad, y para eso hay siete guiones de openMSX en
+que la máquina hace de verdad, y para eso hay ocho guiones de openMSX en
 `tools/`.
 
 Todos siguen el mismo patrón: un breakpoint en `INIT` (0x406C) para armar los
@@ -118,6 +118,23 @@ sprites; 0 diferencias.** De las tablas de patrones y color sólo se exigen los
 tiles que la pantalla usa de verdad: el resto son restos de la pantalla de
 título que el juego ni reescribe ni mira.
 
+## `omsx_vram_menus.tcl` — la pantalla de título y el mapa del valle
+
+Las salas estaban comparadas contra la máquina; las pantallas de menú no, y
+ahí se escondían dos errores. Esto vuelca las dos.
+
+La de título se pilla en 0x43B7, el final de `dibuja_titulo_y_texto_ya`. El
+mapa del valle es más difícil: sólo sale al pasarse una pirámide, y la demo no
+se pasa ninguna. Se fuerza en 0x4176 —un punto que se ejecuta cada vez que se
+monta una sala— **borrando la tabla de nombres entera** y poniendo el PC en
+0x41C0, que es la pareja de llamadas que monta el mapa. Borrar antes es lo que
+hace concluyente el volcado: lo que aparezca después en la tabla de nombres lo
+ha escrito el código del mapa y nadie más.
+
+    cd tools && python pantallas.py --vram ../kingsvalley.rom 0x4000         ../work/omsx_menus
+
+**Dos pantallas; tabla de nombres, de patrones y de color; 0 diferencias.**
+
 ## `omsx_barrido_huecos.tcl` y `omsx_quien_lee.tcl`
 
 Los dos genéricos: el primero recorre los huecos sin clasificar poniendo
@@ -128,12 +145,9 @@ poniendo un watchpoint y anotando el PC.
 
 Hay que decirlo con la misma claridad:
 
-- Las **pantallas de menú** que dibuja `tools/pantallas.py` —el título, el mapa
-  del valle, la pantalla final— **no se han comparado byte a byte contra la
-  VRAM del emulador**. Se han mirado, y salen reconocibles y coherentes: el
-  logotipo de Konami sale nítido, lo que sólo puede pasar si la lectura de R3 y
-  R4 es correcta. Pero mirar no es comparar. Las quince **pirámides** son otra
-  cosa: ésas sí están comparadas, y cuadran.
+- La **pantalla final** y la del **logotipo de Konami** no se han comparado
+  byte a byte contra la VRAM del emulador. La de título, el mapa del valle y
+  las quince pirámides sí, y cuadran exactamente.
 - Que **0xE130 sea el contador de fotogramas** de la pantalla en reposo está
   deducido de cómo se usa —se incrementa una vez por fotograma y se compara
   contra dos plazos, 0x58 y 0xE0—, no medido.

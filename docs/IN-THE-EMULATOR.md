@@ -1,7 +1,7 @@
 # In the emulator
 
 Reading opcodes is not enough for everything. Some things can only be settled
-by watching what the machine actually does, and for that there are seven
+by watching what the machine actually does, and for that there are eight
 openMSX scripts in `tools/`.
 
 They all follow the same pattern: a breakpoint at `INIT` (0x406C) to arm the
@@ -116,6 +116,23 @@ table; 0 differences.** Of the pattern and colour tables only the tiles the
 screen actually uses are required to match — the rest of those tables is
 leftovers from the title screen that the game neither rewrites nor reads.
 
+## `omsx_vram_menus.tcl` — the title screen and the valley map
+
+The rooms were compared against the machine; the menu screens were not, and
+two mistakes hid there. This dumps both.
+
+The title screen is caught at 0x43B7, the end of `dibuja_titulo_y_texto_ya`.
+The valley map is harder: it only comes up when a pyramid is cleared, and the
+demo never clears one. It is forced at 0x4176 — a point that runs every time a
+room is built — by **blanking the whole name table** and then setting PC to
+0x41C0, the pair of calls that build the map. Blanking first is what makes the
+dump conclusive: whatever appears in the name table afterwards was written by
+the map's own code.
+
+    cd tools && python pantallas.py --vram ../kingsvalley.rom 0x4000         ../work/omsx_menus
+
+**Two screens; name table, pattern table and colour table; 0 differences.**
+
 ## `omsx_barrido_huecos.tcl` and `omsx_quien_lee.tcl`
 
 Both generic: the first sweeps the unclassified gaps setting read watchpoints,
@@ -126,12 +143,9 @@ recording the PC.
 
 This needs saying just as plainly:
 
-- The **menu screens** drawn by `tools/pantallas.py` — the title, the valley
-  map, the final screen — have **not been compared byte for byte against the
-  emulator's VRAM**. They have been looked at, and they come out recognisable
-  and coherent: the Konami wordmark comes out crisp, which can only happen if
-  the reading of R3 and R4 is right. But looking is not comparing. The fifteen
-  **pyramids** are a different matter: those are compared, and they match.
+- The **final screen** and the **Konami logo screen** have not been compared
+  byte for byte against the emulator's VRAM. The title screen, the valley map
+  and the fifteen pyramids have, and they match exactly.
 - That **0xE130 is the frame counter** of the screen at rest is deduced from
   how it is used — incremented once per frame and compared against two
   deadlines, 0x58 and 0xE0 — not measured.

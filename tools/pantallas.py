@@ -199,6 +199,32 @@ def voltea_sprites(vram, origen, destino, cuantos):
                 break
 
 
+def dibuja_logotipo_del_juego(vram):
+    """revela_texto_aviso (0x43b8), que resulta ser EL LOGOTIPO DEL JUEGO.
+
+    Veintidos pasos, uno por columna. Los nueve primeros escriben KING'S a
+    partir de la celda 0x38a7 y los trece siguientes VALLEY a partir de
+    0x3904. En cada paso escribe DOS patrones consecutivos, uno debajo del
+    otro, empezando en paso*2 + 0x9b -o sea que las letras son de 2 tiles de
+    alto y ocupan los patrones 0x9b a 0xc6-. El remate de 0x43e2 anade el
+    patron 0xc7 o 0xc8 cuando la celda cae en 0x3aec o 0x3aed: es la pata de
+    la G, que baja una fila mas que el resto.
+    """
+    for paso in range(0x16):
+        base = 0x38A7 if paso < 9 else 0x3904
+        hl = (base & 0xFF00) | ((base + paso) & 0xFF)
+        c = (paso * 2 + 0x9B) & 0xFF
+        for _ in range(2):
+            vram.arma(hl)
+            vram.escribe(c)
+            hl = (hl & 0xFF00) | ((hl + 0x20) & 0xFF) if False else hl + 0x20
+            c = (c + 1) & 0xFF
+        a = (hl - 0xEC) & 0xFF
+        if a < 2:
+            vram.arma(hl)
+            vram.escribe((a + 0xC7) & 0xFF)
+
+
 def franja_de_patrones(vram, direccion, primero, cuantos):
     """escribe_franja_de_patrones (0x4866): indices consecutivos, y devuelve
     la fila siguiente (entrada + 0x20) y el indice siguiente."""
@@ -411,8 +437,13 @@ def sala_dibujada(rom, org, nivel, pantalla=0):
 # cartucho. Los numeros de esta seccion salen del listado, no de probar.
 # --------------------------------------------------------------------------
 
-def pantalla_de_titulo(rom, org):
-    """dibuja_grupo_del_titulo (0x42cc), mas el scroll del logo ya terminado."""
+def pantalla_del_logo_de_konami(rom, org):
+    """La PRIMERA pantalla, la de la tarea 0: el logotipo de KONAMI subiendo.
+
+    dibuja_grupo_del_titulo (0x42cc) mas el scroll de tarea_0_desplaza_logo
+    (0x4842) ya terminado. Cuidado: NO es la pantalla de titulo del juego. La
+    tarea 1 borra todo esto y encima pinta KING'S VALLEY.
+    """
     vram = Vram()
 
     # prepara_scroll_del_logo (0x4823): el dibujo del logo de Konami en la
@@ -420,7 +451,7 @@ def pantalla_de_titulo(rom, org):
     guion_x3(rom, org, vram, 0x4874, 0x6300)
     rellena_x3(vram, 0x0300, 0xD8, 0xF0)
 
-    # rellena_franja_borde (0x44cf)
+    # rellena_franja_borde (0x44cf): la TIPOGRAFIA, en el patron 0x10
     guion_x3(rom, org, vram, 0x467D, 0x2080)
     rellena_x3(vram, 0x0080, 0x180, 0xF0)
 
@@ -452,8 +483,45 @@ def pantalla_de_titulo(rom, org):
     # interprete de 0x451a (la llamada es a dibuja_guion_con_direccion), no
     # con el de texto, aunque acabe escribiendo letras en la tabla de nombres
     dibuja_guion(rom, org, vram, 0x47FE)
-    # y el (c)KONAMI 1985 + PUSH SPACE KEY de cierra_aviso_titulo (0x43f0)
-    escribe_guion_de_texto(rom, org, vram, 0x47C1)
+    return vram
+
+
+def pantalla_de_titulo(rom, org):
+    """LA PANTALLA DE TITULO DE VERDAD: KING'S VALLEY, no el logo de Konami.
+
+    Comprobada byte a byte contra la VRAM de una maquina real (0 diferencias
+    en la tabla de nombres y en los patrones y colores de los 80 tiles que
+    usa): tools/omsx_vram_menus.tcl y `pantallas.py --vram`.
+
+    Antes esta funcion devolvia la pantalla del logo de KONAMI, y de ahi salia
+    un rotulo equivocado en la web. La diferencia esta en la tabla de nombres:
+    la tarea 1 borra el logo de Konami y el rotulo SOFTWARE, y pinta encima el
+    del juego con dibuja_logotipo_del_juego, mas el dibujito de la piramide.
+    """
+    vram = Vram()
+    # los mismos patrones y colores que deja la tarea 0
+    guion_x3(rom, org, vram, 0x4874, 0x6300)
+    rellena_x3(vram, 0x0300, 0xD8, 0xF0)
+    guion_x3(rom, org, vram, 0x467D, 0x2080)     # la tipografia
+    rellena_x3(vram, 0x0080, 0x180, 0xF0)
+    guion_x3(rom, org, vram, 0x47A7, 0x0008)     # el color del tile 0x01
+    guion_x3(rom, org, vram, 0x490B, 0x2480)     # los patrones del rotulo
+    guion_x3(rom, org, vram, 0x4A97, 0x0480)     # y su color
+    hl = 0x44D8
+    for _ in range(22):
+        guion_x3(rom, org, vram, 0x4AAB, hl)
+        hl += 0x10
+    rellena_x3(vram, hl, 0x10, 0x40)
+
+    dibuja_logotipo_del_juego(vram)              # KING'S VALLEY
+    # drawMenuEnd: el dibujito de la piramide, 3 filas x 6 celdas en 0x3892
+    i = 0x4ABC - org
+    for f in range(3):
+        vram.arma(0x3892 + f * 0x20)
+        for _c in range(6):
+            vram.escribe(rom[i])
+            i += 1
+    escribe_guion_de_texto(rom, org, vram, 0x47C1)   # (c)KONAMI 1985 + aviso
     return vram
 
 
@@ -483,12 +551,37 @@ def pantalla_final(rom, org):
     return vram
 
 
-def pantalla_de_sala(rom, org):
-    """monta_pantalla_de_sala (0x773c)."""
-    vram = Vram()
-    guion_x3(rom, org, vram, 0x7836, 0x2600)
-    guion_x3(rom, org, vram, 0x78DF, 0x0600)
-    dibuja_guion(rom, org, vram, 0x7908)
+def pantalla_del_mapa(rom, org):
+    """EL MAPA DEL VALLE: monta_el_mapa_del_valle (0x773c).
+
+    OJO CON LA VRAM DE PARTIDA: esta pantalla NO se monta sobre una VRAM
+    limpia. El color del tile 0x01 -el interior del pergamino, que es lo que
+    hace que se vea BLANCO- lo dejo el guion 0x47a7 en la pantalla de titulo,
+    y nadie lo vuelve a tocar en toda la partida. Dibujada sobre una VRAM en
+    blanco, el pergamino sale negro; asi salia antes en la web.
+
+    Encima van las tres cosas que escribe la pareja de llamadas de 0x41c0: el
+    guion del pergamino, el guion de texto del marcador (0x47aa) y las cifras.
+    El marcador y las vidas son estado de la RAM, no del cartucho: aqui se
+    dibujan como estan al empezar una partida -todo a cero y REST-04-.
+
+    Comprobado byte a byte contra la VRAM de una maquina real: 0 diferencias
+    en la tabla de nombres y en los 76 tiles que la pantalla usa.
+    """
+    vram = pantalla_de_titulo(rom, org)
+    guion_x3(rom, org, vram, 0x7836, 0x2600)     # el pergamino, en patrones
+    guion_x3(rom, org, vram, 0x78DF, 0x0600)     # y su color
+    dibuja_guion(rom, org, vram, 0x7908)         # el guion que trae direccion
+    escribe_guion_de_texto(rom, org, vram, 0x47AA)   # SCORE / HI / REST
+    # L_446B: las seis cifras del marcador y las del record, con el patron
+    # 0x10 por cada cero; y dibuja_contador_de_rondas, las vidas que quedan
+    for direccion in (0x3807, 0x3811):
+        vram.arma(direccion)
+        for _ in range(6):
+            vram.escribe(0x10)
+    vram.arma(0x381D)
+    vram.escribe(0x10)
+    vram.escribe(0x14)
     return vram
 
 
@@ -502,7 +595,7 @@ GUIONES_DE_SPRITE = (
     (0x53D8, "marcador, herramienta 3"),
     (0x5511, "los que carga prepara_sala_nueva en 0x1940"),
     (0x5571, "los que carga prepara_sala_nueva en 0x1EA0"),
-    (0x7908, "los de monta_pantalla_de_sala, en 0x1F20"),
+    (0x7908, "los del mapa del valle, en 0x1F20"),
 )
 
 
@@ -536,13 +629,62 @@ def hoja_de_sprites(rom, org, columnas=16):
 
 PANTALLAS = [
     ("titulo", pantalla_de_titulo),
+    ("logo_de_konami", pantalla_del_logo_de_konami),
     ("marco_de_juego", pantalla_de_juego),
     ("pantalla_final", pantalla_final),
-    ("pantalla_de_sala", pantalla_de_sala),
+    ("mapa_del_valle", pantalla_del_mapa),
 ]
 
 
+def comprueba_vram(rom, org, carpeta):
+    """Compara la pantalla de titulo y el mapa del valle contra los 16 KB de
+    VRAM que tools/omsx_vram_menus.tcl saca de una maquina de verdad.
+
+    De la tabla de nombres se exige todo. De los patrones y el color solo los
+    tiles que la pantalla usa: el resto son restos de pantallas anteriores que
+    el juego ni reescribe ni mira. Del volcado del mapa se descartan las
+    celdas que dejo la sala sobre la que se forzo la pantalla.
+    """
+    RESTOS = {(f, c) for f in (14, 15, 16) for c in range(26, 31)} | {(20, 16)}
+    casos = (("titulo", pantalla_de_titulo, set()),
+             ("mapa", pantalla_del_mapa, RESTOS))
+    fallos = vistos = 0
+    for etiqueta, fn, restos in casos:
+        ruta = os.path.join(carpeta, "vram_%s.bin" % etiqueta)
+        if not os.path.exists(ruta):
+            print("  %-8s falta %s" % (etiqueta, ruta))
+            continue
+        v = open(ruta, "rb").read()
+        vram = fn(rom, org)
+        dn = dp = dc = 0
+        usados = set()
+        for f in range(24):
+            for c in range(32):
+                if (f, c) in restos:
+                    continue
+                real = v[BASE_NOMBRE + f * 32 + c]
+                usados.add((f // 8, real))
+                if real != vram.b[BASE_NOMBRE + f * 32 + c]:
+                    dn += 1
+        for tercio, t in usados:
+            base = tercio * 0x800 + t * 8
+            for k in range(8):
+                dp += vram.b[BASE_PATRON + base + k] != v[BASE_PATRON + base + k]
+                dc += vram.b[BASE_COLOR + base + k] != v[BASE_COLOR + base + k]
+        malo = dn + dp + dc
+        vistos += 1
+        fallos += malo
+        print("  %-8s nombres %d, patron %d, color %d  (%d tiles)  %s"
+              % (etiqueta, dn, dp, dc, len(usados),
+                 "OK" if malo == 0 else "MAL"))
+    print("%d pantallas comparadas, %d diferencias" % (vistos, fallos))
+    return 0 if fallos == 0 and vistos else 1
+
+
 def main():
+    if len(sys.argv) >= 5 and sys.argv[1] == "--vram":
+        return comprueba_vram(open(sys.argv[2], "rb").read(),
+                              int(sys.argv[3], 0), sys.argv[4])
     if len(sys.argv) != 4:
         print(__doc__)
         return 2
@@ -553,7 +695,7 @@ def main():
     # el ROTULO: el recorte de la pantalla de titulo donde el cartucho pinta
     # su logotipo. No es un montaje: son las mismas filas de la misma VRAM
     px_tit = revela_screen2(pantalla_de_titulo(rom, org))
-    recorte = [fila[9 * 8:24 * 8] for fila in px_tit[6 * 8:12 * 8]]
+    recorte = [fila[6 * 8:26 * 8] for fila in px_tit[4 * 8:10 * 8]]
     png(os.path.join(carpeta, "rotulo.png"), recorte, escala=4)
     print("  rotulo    %s" % os.path.join(carpeta, "rotulo.png"))
 

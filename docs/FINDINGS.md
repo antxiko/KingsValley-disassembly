@@ -253,6 +253,24 @@ It reassembles byte for byte either way. It is worth pointing at because a
 disassembler that insists on instruction boundaries will quietly get this one
 wrong.
 
+## The map's parchment is white because of the title screen
+
+The valley map is a parchment with fifteen pyramids on it. Its interior is
+tile 0x01, and the reason it looks white is a colour byte written by the
+**title screen** — the script at 0x47A7, which fills the colour of tile 0x01
+with 0xFF. Nothing writes there again for the rest of the game.
+
+So the map screen cannot be reconstructed on its own: drawn on a clean VRAM
+the parchment comes out black. That is exactly how it was published here until
+it was compared against the machine.
+
+The same comparison caught a second one. **The title screen and the Konami
+logo are two different screens.** Task 0 scrolls the Konami wordmark up; task 1
+erases it, along with the word SOFTWARE, and paints KING'S VALLEY on top —
+twenty-two steps, one per column, two consecutive patterns each from 0x9B on,
+plus the foot of the G, which drops one row further. This project had the two
+confused, and the site carried the Konami logo where the game's should be.
+
 ## It does carry Konami's hidden mark
 
 Konami hid its catalogue number and the title in katakana at the end of many

@@ -254,6 +254,25 @@ Reensambla byte a byte de las dos maneras. Merece señalarlo porque un
 desensamblador que se empeñe en respetar los límites de instrucción se
 equivocará aquí en silencio.
 
+## El pergamino del mapa es blanco por culpa de la pantalla de título
+
+El mapa del valle es un pergamino con quince pirámides encima. Su interior es
+el tile 0x01, y si se ve blanco es por un byte de color que escribe la
+**pantalla de título** —el guion de 0x47A7, que rellena de 0xFF el color de ese
+tile—. Nadie vuelve a escribir ahí en toda la partida.
+
+O sea que la pantalla del mapa no se puede reconstruir por su cuenta: dibujada
+sobre una VRAM limpia, el pergamino sale negro. Así estuvo publicada aquí hasta
+que se comparó contra la máquina.
+
+La misma comparación cazó otra. **La pantalla de título y el logotipo de Konami
+son dos pantallas distintas.** La tarea 0 sube el logotipo de Konami; la tarea 1
+lo borra entero, junto con la palabra SOFTWARE, y pinta encima KING'S VALLEY
+—veintidós pasos, uno por columna, dos patrones consecutivos cada uno a partir
+del 0x9B, más la pata de la G, que baja una fila más—. Este proyecto tenía las
+dos confundidas, y la web llevaba el logotipo de Konami donde debía ir el del
+juego.
+
 ## Sí lleva la marca oculta de Konami
 
 Konami escondió su número de catálogo y el título en katakana al final de

@@ -46,11 +46,8 @@ POSES_DEL_EXPLORADOR = (
     (0x18, "ACCION 1"),
     (0x20, "ACCION 2"),
 )
-JUEGOS_DEL_EXPLORADOR = (
-    (0, "CON LAS MANOS VACIAS"),
-    (1, "CON EL CUCHILLO"),
-    (2, "CON EL PICO"),
-)
+JUEGOS_DEL_EXPLORADOR = ((0, "set_vacias"), (1, "set_cuchillo"),
+                         (2, "set_pico"))
 # El explorador son DOS sprites, uno encima del otro: el de arriba en color
 # 0x0E y el de abajo en 0x06. Medido en la SAT real (sprites 4 y 5).
 COLOR_ARRIBA = 0x0E
@@ -73,17 +70,59 @@ TIPOS_DE_MOMIA = 0x6D3C     # nibble alto velocidad, nibble bajo color
 # Los OBJETOS no son sprites: son tiles del mapa. Aqui van con el numero de
 # celda que les da el descriptor de nivel y el nombre de la tabla de 0x5d68.
 OBJETOS = (
-    ((0x43,), "GEMA AZUL OSCURO"),
-    ((0x44,), "GEMA AZUL CLARO"),
-    ((0x45,), "GEMA MAGENTA"),
-    ((0x46,), "GEMA AMARILLA"),
-    ((0x47,), "GEMA VERDE"),
-    ((0x48,), "GEMA GRIS"),
-    ((0x80,), "PICO"),
-    ((0x30,), "CUCHILLO EN EL SUELO"),
-    ((0x78, 0x77), "PALANCA"),
-    ((0x50, 0x51), "PUERTA GIRATORIA"),
+    ((0x43,), "gema1"), ((0x44,), "gema2"), ((0x45,), "gema3"),
+    ((0x46,), "gema4"), ((0x47,), "gema5"), ((0x48,), "gema6"),
+    ((0x80,), "obj_pico"), ((0x30,), "obj_cuchillo"),
+    ((0x78, 0x77), "palanca"), ((0x50, 0x51), "giratoria"),
 )
+
+# La tipografia del cartucho solo trae mayusculas y cifras, asi que los
+# rotulos van sin acentos ni signos: es lo que hay dentro de la ROM.
+TEXTOS = {
+    "es": {
+        "explorador": "EL EXPLORADOR",
+        "set_vacias": "CON LAS MANOS VACIAS",
+        "set_cuchillo": "CON EL CUCHILLO", "set_pico": "CON EL PICO",
+        "obj_pico": "PICO", "obj_cuchillo": "CUCHILLO EN EL SUELO",
+        "poses": "CINCO POSES CADA UNA DE FRENTE Y VOLTEADA",
+        "momia": "LA MOMIA", "tresposes": "SUS TRES POSES",
+        "tipos": "LOS CINCO TIPOS",
+        "velocidad": "DEBAJO DE CADA UNA SU VELOCIDAD",
+        "otras": "LAS OTRAS FIGURAS", "nubes": "NUBE GRANDE Y PEQUENA",
+        "destello": "DESTELLO Y LADRILLOS",
+        "objetos": "LAS ARMAS Y LOS OBJETOS",
+        "sontiles": "NO SON SPRITES SINO TILES DEL MAPA",
+        "gema1": "GEMA AZUL OSCURO", "gema2": "GEMA AZUL CLARO",
+        "gema3": "GEMA MAGENTA", "gema4": "GEMA AMARILLA",
+        "gema5": "GEMA VERDE", "gema6": "GEMA GRIS",
+        "palanca": "PALANCA", "giratoria": "PUERTA GIRATORIA",
+        "cuchilloaire": "EL CUCHILLO EN EL AIRE",
+        "salida": "LA SALIDA", "cerrada": "CERRADA",
+        "cerrandose": "CERRANDOSE", "abierta": "ABIERTA",
+    },
+    "en": {
+        "explorador": "THE EXPLORER",
+        "set_vacias": "EMPTY HANDED",
+        "set_cuchillo": "WITH THE KNIFE", "set_pico": "WITH THE PICKAXE",
+        "obj_pico": "PICKAXE", "obj_cuchillo": "KNIFE ON THE FLOOR",
+        "poses": "FIVE POSES EACH ONE FACING AND MIRRORED",
+        "momia": "THE MUMMY", "tresposes": "ITS THREE POSES",
+        "tipos": "THE FIVE TYPES",
+        "velocidad": "UNDER EACH ONE ITS SPEED",
+        "otras": "THE OTHER FIGURES", "nubes": "BIG AND SMALL CLOUD",
+        "destello": "SPARKLE AND BRICKS",
+        "objetos": "THE WEAPONS AND THE ITEMS",
+        "sontiles": "NOT SPRITES BUT MAP TILES",
+        "gema1": "DARK BLUE JEWEL", "gema2": "LIGHT BLUE JEWEL",
+        "gema3": "MAGENTA JEWEL", "gema4": "YELLOW JEWEL",
+        "gema5": "GREEN JEWEL", "gema6": "GREY JEWEL",
+        "palanca": "LEVER", "giratoria": "REVOLVING DOOR",
+        "cuchilloaire": "THE KNIFE IN THE AIR",
+        "salida": "THE EXIT", "cerrada": "CLOSED",
+        "cerrandose": "CLOSING", "abierta": "OPEN",
+    },
+}
+
 # Los cinco patrones del cuchillo mientras gira por el aire, framesCuchillo
 # (0x588f). No son celdas de mapa: los escribe dibuja_entidad_si_visible
 # directamente en la tabla de nombres.
@@ -149,8 +188,9 @@ def tile(px, vram, patron, x, y, tercio=0):
                 px[iy][ix] = tinta if (forma >> (7 - fx)) & 1 else papel
 
 
-def lamina(rom, org=ORG):
-    """La lamina entera."""
+def lamina(rom, org=ORG, idioma="es"):
+    """La lamina entera, en el idioma que se pida."""
+    T = TEXTOS[idioma]
     fuente = _vram_con_fuente(rom, org)
     import mapas
 
@@ -167,10 +207,10 @@ def lamina(rom, org=ORG):
     def rotulo(texto, y, alto_dibujo=8):
         escribe(px, fuente, texto, 16, y + (alto_dibujo - 8) // 2)
 
-    y = titulo("EL EXPLORADOR", 10)
+    y = titulo(T["explorador"], 10)
     for lleva, nombre in JUEGOS_DEL_EXPLORADOR:
         vram = pantallas.vram_de_juego(rom, org, lleva)
-        rotulo(nombre, y, 16)
+        rotulo(T[nombre], y, 16)
         x = COL
         for patron, _p in POSES_DEL_EXPLORADOR:
             # son DOS sprites en la MISMA posicion, uno de cada color: asi es
@@ -182,20 +222,19 @@ def lamina(rom, org=ORG):
             sprite(px, vram, patron + 0x64, x + 20, y, COLOR_ABAJO)
             x += 48
         y += 26
-    escribe(px, fuente, "CINCO POSES CADA UNA DE FRENTE Y VOLTEADA", 16, y,
-            GRIS)
+    escribe(px, fuente, T["poses"], 16, y, GRIS)
     y += 24
 
     vram = pantallas.vram_de_juego(rom, org, 0)
-    y = titulo("LA MOMIA", y)
-    rotulo("SUS TRES POSES", y, 16)
+    y = titulo(T["momia"], y)
+    rotulo(T["tresposes"], y, 16)
     x = COL
     for patron, _p in POSES_DE_LA_MOMIA:
         sprite(px, vram, patron, x, y, 0x0F)
         sprite(px, vram, patron + 0x60, x + 20, y, 0x0F)
         x += 48
     y += 26
-    rotulo("LOS CINCO TIPOS", y, 16)
+    rotulo(T["tipos"], y, 16)
     x = COL
     for tipo in range(5):
         car = mapas._rb(rom, TIPOS_DE_MOMIA + tipo, org)
@@ -203,38 +242,38 @@ def lamina(rom, org=ORG):
         escribe(px, fuente, "%d" % (car >> 4), x + 4, y + 18, GRIS)
         x += 32
     y += 30
-    escribe(px, fuente, "DEBAJO DE CADA UNA SU VELOCIDAD", 16, y, GRIS)
+    escribe(px, fuente, T["velocidad"], 16, y, GRIS)
     y += 24
 
-    y = titulo("LAS OTRAS FIGURAS", y)
-    escribe(px, fuente, "NUBE GRANDE Y PEQUENA", 16, y)
-    escribe(px, fuente, "DESTELLO Y LADRILLOS", 16, y + 10, GRIS)
+    y = titulo(T["otras"], y)
+    escribe(px, fuente, T["nubes"], 16, y)
+    escribe(px, fuente, T["destello"], 16, y + 10, GRIS)
     x = COL
     for patron, _nombre in OTROS_SPRITES:
         sprite(px, vram, patron, x, y, 0x0F)
         x += 32
     y += 30
 
-    y = titulo("LAS ARMAS Y LOS OBJETOS", y)
-    escribe(px, fuente, "NO SON SPRITES SINO TILES DEL MAPA", 16, y, GRIS)
+    y = titulo(T["objetos"], y)
+    escribe(px, fuente, T["sontiles"], 16, y, GRIS)
     y += 14
     for celdas, nombre in OBJETOS:
-        rotulo(nombre, y)
+        rotulo(T[nombre], y)
         x = COL
         for c in celdas:
             tile(px, vram, mapas.traduce_celda_a_patron(rom, c, org), x, y)
             x += 8
         y += 12
-    rotulo("EL CUCHILLO EN EL AIRE", y)
+    rotulo(T["cuchilloaire"], y)
     x = COL
     for k in range(5):
         tile(px, vram, mapas._rb(rom, GIRO_DEL_CUCHILLO + k, org), x, y)
         x += 12
     y += 26
 
-    y = titulo("LA SALIDA", y)
-    for i, nombre in enumerate(("CERRADA", "CERRANDOSE", "ABIERTA")):
-        rotulo(nombre, y, 24)
+    y = titulo(T["salida"], y)
+    for i, clave in enumerate(("cerrada", "cerrandose", "abierta")):
+        rotulo(T[clave], y, 24)
         guion = mapas.ANIM_SALIDA[i]
         for f in range(3):
             for c in range(5):
@@ -253,10 +292,12 @@ def main():
     org = int(sys.argv[2], 0)
     carpeta = sys.argv[3]
     os.makedirs(carpeta, exist_ok=True)
-    px = lamina(rom, org)
-    salida = os.path.join(carpeta, "figuras.png")
-    pantallas.png(salida, px, escala=2)
-    print("  figuras   %s" % salida)
+    for idioma in TEXTOS:
+        px = lamina(rom, org, idioma)
+        nombre = "figuras.png" if idioma == "es" else "figuras_%s.png" % idioma
+        salida = os.path.join(carpeta, nombre)
+        pantallas.png(salida, px, escala=2)
+        print("  figuras   %s" % salida)
     return 0
 
 

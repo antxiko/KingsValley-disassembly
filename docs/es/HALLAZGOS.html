@@ -146,6 +146,10 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 <h2 id="un-salto-a-media-instruccion">Un salto a media instrucción</h2>
 <p>En 0x4F0C hay un <code>jr z,$+3</code>. Tres bytes más allá no hay principio de instrucción: hay el <b>segundo byte</b> del <code>cp 020h</code> de 0x4F0E, y ese 0x20 suelto se decodifica como <code>jr nz</code>. Como al salto sólo se llega con Z puesto, ese <code>jr nz</code> no dispara nunca, y el efecto es saltarse la comprobación.</p>
 <p>Reensambla byte a byte de las dos maneras. Merece señalarlo porque un desensamblador que se empeñe en respetar los límites de instrucción se equivocará aquí en silencio.</p>
+<h2 id="el-pergamino-del-mapa-es-blanco-por-culpa-de-la-pantalla-de-titulo">El pergamino del mapa es blanco por culpa de la pantalla de título</h2>
+<p>El mapa del valle es un pergamino con quince pirámides encima. Su interior es el tile 0x01, y si se ve blanco es por un byte de color que escribe la <b>pantalla de título</b> —el guion de 0x47A7, que rellena de 0xFF el color de ese tile—. Nadie vuelve a escribir ahí en toda la partida.</p>
+<p>O sea que la pantalla del mapa no se puede reconstruir por su cuenta: dibujada sobre una VRAM limpia, el pergamino sale negro. Así estuvo publicada aquí hasta que se comparó contra la máquina.</p>
+<p>La misma comparación cazó otra. <b>La pantalla de título y el logotipo de Konami son dos pantallas distintas.</b> La tarea 0 sube el logotipo de Konami; la tarea 1 lo borra entero, junto con la palabra SOFTWARE, y pinta encima KING&#x27;S VALLEY —veintidós pasos, uno por columna, dos patrones consecutivos cada uno a partir del 0x9B, más la pata de la G, que baja una fila más—. Este proyecto tenía las dos confundidas, y la web llevaba el logotipo de Konami donde debía ir el del juego.</p>
 <h2 id="si-lleva-la-marca-oculta-de-konami">Sí lleva la marca oculta de Konami</h2>
 <p>Konami escondió su número de catálogo y el título en katakana al final de muchos cartuchos; lo descubrió <b>Manuel Pazos</b> (<a href="https://twitter.com/ManuelPazosMSX">@ManuelPazosMSX</a>).</p>
 <p>Éste la lleva, cerrando en 0x7FFF:</p>

@@ -146,6 +146,10 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 <h2 id="a-jump-into-the-middle-of-an-instruction">A jump into the middle of an instruction</h2>
 <p>At 0x4F0C there is a <code>jr z,$+3</code>. Three bytes ahead is not an instruction boundary: it is the <b>second byte</b> of the <code>cp 020h</code> at 0x4F0E, and that 0x20 on its own decodes as <code>jr nz</code>. Since the jump only happens with Z set, the <code>jr nz</code> it lands on never fires, and the effect is to skip the comparison.</p>
 <p>It reassembles byte for byte either way. It is worth pointing at because a disassembler that insists on instruction boundaries will quietly get this one wrong.</p>
+<h2 id="the-map-s-parchment-is-white-because-of-the-title-screen">The map&#x27;s parchment is white because of the title screen</h2>
+<p>The valley map is a parchment with fifteen pyramids on it. Its interior is tile 0x01, and the reason it looks white is a colour byte written by the <b>title screen</b> — the script at 0x47A7, which fills the colour of tile 0x01 with 0xFF. Nothing writes there again for the rest of the game.</p>
+<p>So the map screen cannot be reconstructed on its own: drawn on a clean VRAM the parchment comes out black. That is exactly how it was published here until it was compared against the machine.</p>
+<p>The same comparison caught a second one. <b>The title screen and the Konami logo are two different screens.</b> Task 0 scrolls the Konami wordmark up; task 1 erases it, along with the word SOFTWARE, and paints KING&#x27;S VALLEY on top — twenty-two steps, one per column, two consecutive patterns each from 0x9B on, plus the foot of the G, which drops one row further. This project had the two confused, and the site carried the Konami logo where the game&#x27;s should be.</p>
 <h2 id="it-does-carry-konami-s-hidden-mark">It does carry Konami&#x27;s hidden mark</h2>
 <p>Konami hid its catalogue number and the title in katakana at the end of many cartridges; <b>Manuel Pazos</b> (<a href="https://twitter.com/ManuelPazosMSX">@ManuelPazosMSX</a>) found it.</p>
 <p>This one has it, ending at 0x7FFF:</p>

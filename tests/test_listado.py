@@ -381,6 +381,40 @@ class TestMapas(unittest.TestCase):
             self.assertIn("**34**", texto,
                           "%s no publica las 34 momias" % pagina)
 
+    def test_las_dos_laminas_de_figuras_estan(self):
+        """La lamina de figuras tiene que existir en los DOS idiomas.
+
+        Guardian del fallo que se publico el 2026-09-04: la pagina inglesa
+        servia la lamina rotulada en castellano.
+        """
+        for fn in ("figuras.png", "figuras_en.png"):
+            self.assertTrue(
+                os.path.exists(os.path.join(DOCS, "imagenes", fn)),
+                "falta docs/imagenes/%s" % fn)
+
+    def test_las_quince_salas_estan_dibujadas(self):
+        """Las quince, no una muestra."""
+        for n in range(1, 16):
+            fn = os.path.join(DOCS, "imagenes", "sala_%02d.png" % n)
+            self.assertTrue(os.path.exists(fn), "falta sala_%02d.png" % n)
+
+    def test_el_rotulo_no_es_el_logotipo_de_konami(self):
+        """El rotulo de la cabecera sale de la pantalla de TITULO.
+
+        No se puede mirar el PNG desde aqui, pero si se puede exigir que el
+        generador recorte de pantalla_de_titulo y que esa funcion dibuje el
+        logotipo del juego. Guardian del fallo del 2026-09-04, cuando la web
+        llevo durante unas horas el logotipo de Konami como rotulo.
+        """
+        fuente = lee(os.path.join(RAIZ, "tools", "pantallas.py"))
+        self.assertIn("dibuja_logotipo_del_juego(vram)", fuente)
+        self.assertIn("def pantalla_del_logo_de_konami", fuente)
+        recorte = re.search(r"px_tit = revela_screen2\(pantalla_de_titulo",
+                            fuente)
+        self.assertIsNotNone(recorte,
+                             "el rotulo ya no se recorta de la pantalla de "
+                             "titulo")
+
     def test_la_web_no_vuelve_a_decir_48_columnas(self):
         """Ninguna pagina puede volver a publicar los anchos viejos."""
         malos = []

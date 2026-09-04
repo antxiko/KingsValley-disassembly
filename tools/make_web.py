@@ -375,47 +375,25 @@ HALLAZGOS = {
 GALERIA = [
     ("titulo.png",
      "<b>La pantalla de titulo</b>, montada con los pasos del propio "
-     "cartucho: el guion de 0x4874 deja el dibujo del logotipo en la tabla de "
-     "patrones, los catorce pasos de <code>tarea_0_desplaza_logo</code> "
-     "escriben sus veintiseis tiles en la tabla de nombres, y los guiones de "
-     "texto de 0x47FE y 0x47C1 ponen SOFTWARE, el copyright y el aviso",
-     "<b>The title screen</b>, built with the cartridge's own steps: the "
-     "script at 0x4874 lays the wordmark's artwork into the pattern table, "
-     "the fourteen steps of <code>tarea_0_desplaza_logo</code> write its "
-     "twenty-six tiles into the name table, and the text scripts at 0x47FE "
-     "and 0x47C1 add SOFTWARE, the copyright and the prompt"),
-    ("sala_01.png",
-     "<b>La primera piramide, entera y con todo dentro</b>: las cuatro gemas "
-     "con sus destellos, las ocho escaleras, el cuchillo del suelo, la puerta "
-     "de salida con su palanca y las dos momias en su sitio de partida. No es "
-     "una captura: es el descriptor del nivel desempaquetado con las mismas "
-     "cuentas que <code>carga_la_sala</code>, y comparado byte a byte contra "
-     "la RAM y la VRAM de una maquina de verdad",
-     "<b>The first pyramid, whole and with everything in it</b>: the four "
-     "jewels with their sparkles, the eight ladders, the knife on the floor, "
-     "the exit door with its lever and the two mummies where they start. Not "
-     "a screenshot: it is the level descriptor unpacked with the same "
-     "arithmetic <code>carga_la_sala</code> uses, and compared byte for byte "
-     "against the RAM and VRAM of a real machine"),
-    ("sala_02.png",
-     "<b>La segunda piramide.</b> Las salas pares tienen cuatro bandas de "
-     "dieciseis columnas: <b>64 en total, dos pantallas</b>, y de ahi que la "
-     "X del explorador necesite dos bytes enteros. Aqui hay ademas siete "
-     "picos, dos puertas giratorias y dos muros trampa",
-     "<b>The second pyramid.</b> Even-numbered rooms have four bands of "
-     "sixteen columns: <b>64 in all, two screens</b>, which is why the "
-     "explorer's X needs two whole bytes. This one also has seven pickaxes, "
-     "two revolving doors and two trap walls"),
-    ("sala_10.png",
-     "<b>La decima piramide</b>, con el mismo dibujo de ladrillo y otro "
-     "color. Lo unico que cambia entre un grupo de cuatro salas y el "
-     "siguiente son los ocho bytes de color que "
-     "<code>columna_decorativa</code> escribe en los tiles 0x40 a 0x44",
-     "<b>The tenth pyramid</b>, same brick artwork, different colour. The "
-     "only thing that changes between one group of four rooms and the next "
-     "is the eight bytes of colour <code>columna_decorativa</code> writes "
-     "into tiles 0x40 to 0x44"),
-    ("figuras.png",
+     "cartucho y comprobada byte a byte contra la VRAM de una maquina real. "
+     "El rotulo del juego no es un dibujo suelto: son veintidos pasos, uno "
+     "por columna, cada uno escribiendo dos patrones consecutivos a partir "
+     "del 0x9B, mas la pata de la G, que baja una fila mas",
+     "<b>The title screen</b>, built with the cartridge's own steps and "
+     "matched byte for byte against a real machine's VRAM. The game's "
+     "wordmark is not one piece of artwork: it is twenty-two steps, one per "
+     "column, each writing two consecutive patterns from 0x9B on, plus the "
+     "foot of the G, which drops one row further"),
+    ("logo_de_konami.png",
+     "La pantalla ANTERIOR a esa: el <b>logotipo de Konami</b> subiendo, que "
+     "es la tarea 0. La tarea 1 lo borra entero y pinta el del juego encima. "
+     "Son dos pantallas distintas, y confundirlas es lo que tuvo aqui el "
+     "logotipo equivocado hasta el 2026-09-04",
+     "The screen BEFORE that one: the <b>Konami wordmark</b> scrolling up, "
+     "which is task 0. Task 1 erases all of it and paints the game's own on "
+     "top. They are two different screens, and mistaking one for the other "
+     "is what kept the wrong logo here until 2026-09-04"),
+    ("figuras{}.png",
      "<b>Todas las figuras del cartucho, con su nombre.</b> El explorador "
      "tiene tres juegos de sprites -con las manos vacias, con el cuchillo y "
      "con el pico- que se cargan en la MISMA direccion de VRAM, y por eso "
@@ -428,18 +406,64 @@ GALERIA = [
      "a time. There is no artwork for facing the other way: it is made on the "
      "fly by reversing the bits. The captions on this sheet are written in "
      "the cartridge's own typeface"),
-    ("pantalla_de_sala.png",
+    ("mapa_del_valle.png",
      "El <b>mapa del valle</b>: las quince piramides y el rotulo GOAL. No es "
      "una lista de niveles sino un <b>anillo</b>, y cada puerta de cada "
-     "piramide lleva escrito a cual de ellas lleva. Lo monta "
-     "<code>monta_el_mapa_del_valle</code> (0x773C) con tres guiones: dos "
-     "para los patrones y el color, y el tercero -0x7908- para los sprites",
+     "piramide lleva escrito a cual lleva. El pergamino se ve blanco por un "
+     "color que dejo la pantalla de titulo y que nadie vuelve a tocar en toda "
+     "la partida: dibujado sobre una VRAM limpia sale negro, y asi salia aqui "
+     "hasta el 2026-09-04",
      "The <b>valley map</b>: the fifteen pyramids and the GOAL sign. It is "
      "not a list of levels but a <b>ring</b>, and every door in every pyramid "
-     "carries the number of the pyramid it leads to. "
-     "<code>monta_el_mapa_del_valle</code> (0x773C) builds it from three "
-     "scripts: two for the patterns and colour, and the third -0x7908- for "
-     "the sprites"),
+     "carries the number of the pyramid it leads to. The parchment looks "
+     "white because of a colour the title screen left behind and nothing "
+     "touches again for the rest of the game: drawn on a clean VRAM it comes "
+     "out black, which is how it looked here until 2026-09-04"),
+    ("sala_01.png",
+     "La <b>primera</b>: cuatro gemas, ocho escaleras, un cuchillo y dos momias",
+     "The <b>first</b>: four jewels, eight ladders, one knife and two mummies"),
+    ("sala_02.png",
+     "La <b>segunda</b>, de dos pantallas: siete picos, dos puertas giratorias y dos muros trampa",
+     "The <b>second</b>, two screens wide: seven pickaxes, two revolving doors and two trap walls"),
+    ("sala_03.png",
+     "La <b>tercera</b>: cinco gemas, y el primer muro trampa en una sala de una sola pantalla",
+     "The <b>third</b>: five jewels, and the first trap wall in a one-screen room"),
+    ("sala_04.png",
+     "La <b>cuarta</b>, con dieciseis escaleras: las mas de todo el juego",
+     "The <b>fourth</b>, with sixteen ladders: the most in the game"),
+    ("sala_05.png",
+     "La <b>quinta</b>, la que juega la demo cuando nadie toca nada",
+     "The <b>fifth</b>, the one the demo plays when nobody touches anything"),
+    ("sala_06.png",
+     "La <b>sexta</b>: diez picos, y el cambio a la piedra del segundo grupo",
+     "The <b>sixth</b>: ten pickaxes, and the change to the second group's stone"),
+    ("sala_07.png",
+     "La <b>septima</b>, sin puertas giratorias ni trampas: solo escaleras y gemas",
+     "The <b>seventh</b>, no revolving doors and no traps: just ladders and jewels"),
+    ("sala_08.png",
+     "La <b>octava</b>, con tres muros trampa y cuatro cuchillos",
+     "The <b>eighth</b>, with three trap walls and four knives"),
+    ("sala_09.png",
+     "La <b>novena</b>, la unica con una sola momia",
+     "The <b>ninth</b>, the only one with a single mummy"),
+    ("sala_10.png",
+     "La <b>decima</b>, ya con la piedra roja del tercer grupo",
+     "The <b>tenth</b>, now in the third group's red stone"),
+    ("sala_11.png",
+     "La <b>undecima</b>: dos puertas giratorias en una sala de una pantalla",
+     "The <b>eleventh</b>: two revolving doors in a one-screen room"),
+    ("sala_12.png",
+     "La <b>duodecima</b>, con ocho picos y dos giratorias",
+     "The <b>twelfth</b>, with eight pickaxes and two revolving doors"),
+    ("sala_13.png",
+     "La <b>decimotercera</b>: ocho picos y ninguna trampa",
+     "The <b>thirteenth</b>: eight pickaxes and no traps"),
+    ("sala_14.png",
+     "La <b>decimocuarta</b>, doce picos -la que mas- y la piedra verde del ultimo grupo",
+     "The <b>fourteenth</b>, twelve pickaxes -the most- and the last group's green stone"),
+    ("sala_15.png",
+     "La <b>ultima</b>: seis gemas, y su salida vuelve a la primera piramide",
+     "The <b>last</b>: six jewels, and its exit leads back to the first pyramid"),
     ("pantalla_final.png",
      "La <b>pantalla final</b>, con sus rotulos que se estiran. No son un "
      "dibujo: <code>rotulo_horizontal</code> (0x76A7) escribe un tile de "
@@ -455,7 +479,7 @@ GALERIA = [
      "estan cargados pero todavia sin color: ese lo pone "
      "<code>columna_decorativa</code> despues, y es lo que hace que cada "
      "grupo de cuatro salas tenga su piedra",
-     "The <b>game screen's frame</b> with no room in it, as "
+     "The <b>game screen frame</b> with no room in it, as "
      "<code>prepara_sala_nueva</code> (0x4FC9) leaves it. The wall tiles are "
      "loaded but still colourless: <code>columna_decorativa</code> supplies "
      "that afterwards, and it is what gives each group of four rooms its own "
@@ -495,6 +519,10 @@ def main(argv):
     imgs = ""
     faltan = []
     for fich, es, en in GALERIA:
+        # un "{}" en el nombre se sustituye por el idioma: asi la lamina de
+        # figuras sale rotulada en el idioma de la pagina
+        if "{}" in fich:
+            fich = fich.format("" if idioma == "es" else "_" + idioma)
         ruta = os.path.join(imgdir, fich)
         if not os.path.exists(ruta):
             faltan.append(fich)
