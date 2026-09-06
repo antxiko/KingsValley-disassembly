@@ -14,7 +14,7 @@ analysis and the documentation. That is published under the licence in
 
 ## What is in this repository
 
-The file `src/tennis.asm` is the commented disassembly of the cartridge. It is
+The file `src/kingsvalley.asm` is the commented disassembly of the cartridge. It is
 published for the **preservation, study and documentation** of a title that is
 part of MSX software history.
 

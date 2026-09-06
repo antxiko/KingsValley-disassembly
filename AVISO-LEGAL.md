@@ -14,7 +14,7 @@ licencia de `LICENSE`.
 
 ## Que hay en este repositorio
 
-El fichero `src/tennis.asm` es el desensamblado comentado del cartucho. Se publica
+El fichero `src/kingsvalley.asm` es el desensamblado comentado del cartucho. Se publica
 para la **preservacion, el estudio y la documentacion** de un titulo que es
 parte de la historia del software del MSX.
 
