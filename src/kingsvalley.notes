@@ -2673,13 +2673,12 @@ C 0x661d nada que hacer
 L 0x661e sala_arranca_animacion  Entrada 1 de tabla_65f0: prepara la animacion con A=2 si la tarea activa es la 4, o con A=0 si no, deja el campo 4 en 0x20 y dibuja el bloque
 C 0x661e A = la tarea activa
 C 0x6621 en la tarea 4 se usa A=2
-C 0x6629 en las demas, A=0
+C 0x6629 en las demas, A=0; y guarda las banderas
 C 0x662b la preparacion de 0x67ae
 C 0x6630 campo 4 de la entidad
 C 0x6633 := 0x20
 C 0x6635 y dibuja el bloque en la sala
 L 0x6629 sala_arranca_con_cero  Entrada 8 de tabla_65f0: la misma que sala_arranca_animacion pero forzando A=0
-C 0x6629 guarda las banderas
 C 0x662a A := 0
 L 0x6651 sala_bloque_toca_al_jugador  Entrada 2 de tabla_65f0: solo con el jugador en el estado 1, compara la caja del bloque -desplazada 8 pixeles arriba y 16 a un lado- con la del jugador usando la tabla de 0x67b7; si tocan, marca 0xE133, deja el contador de fotogramas en 0x14 y el campo 1 en 0x30
 C 0x6651 A = el estado del jugador

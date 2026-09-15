@@ -4087,7 +4087,7 @@ sala_arranca_animacion:		; Entrada 1 de tabla_65f0: prepara la animacion con A=2
 	jr z,L_662B		;6626
 	pop af			;6628
 sala_arranca_con_cero:		; Entrada 8 de tabla_65f0: la misma que sala_arranca_animacion pero forzando A=0
-	push af			;6629   ; guarda las banderas
+	push af			;6629   ; en las demas, A=0; y guarda las banderas
 	xor a			;662a   ; A := 0
 L_662B:
 	call dibujo_del_paso		;662b   ; la preparacion de 0x67ae
