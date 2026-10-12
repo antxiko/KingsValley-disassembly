@@ -28,7 +28,7 @@ PIEZAS = [
     P(0x9A, "La pieza del 0x4211", "The tune at 0x4211", "`L_4211`"),
     P(0x8D, "La pieza del 0x66B3", "The tune at 0x66B3", "`L_66B3`"),
 ] + [P(n, "Pista 0x%02X de la tabla" % n, "Table track 0x%02X" % n, TABLA)
-     for n in (0x8C, 0x90, 0x92, 0x93, 0x95, 0x96, 0x98, 0x99)]
+     for n in (0x83, 0x8C, 0x90, 0x92, 0x93, 0x95, 0x96, 0x98, 0x99)]
 
 PAGINA = motor_musica.pagina_basica(
     "`tick_sonido`, 0x7B37, y `reproduce_efecto`, 0x7A9E, que le reparte los "
@@ -48,15 +48,13 @@ PAGINA = motor_musica.pagina_basica(
       "efectos y del 0x87 en adelante hay música. Cada ficha ocupa catorce "
       "bytes desde 0xE010 y 0xE03A guarda la copia del mezclador del PSG, "
       "que el arranque deja en 0xB8. Las pistas «de la tabla» están en la "
-      "tabla de pistas pero ninguna rutina las pide con un `ld a`; se omite "
-      "la 0x83, de media hora sin repetirse.",
+      "tabla de pistas pero ninguna rutina las pide con un `ld a`.",
       "How a piece is asked for",
       "`reproduce_efecto` takes the number in A. Low numbers are effects "
       "and from 0x87 up there is music. Each record takes fourteen bytes "
       "from 0xE010 and 0xE03A holds the copy of the PSG mixer, which "
       "start-up leaves at 0xB8. The tracks marked «in the table» are in the "
-      "track table but no routine asks for them with an `ld a`; 0x83, half "
-      "an hour long without repeating, is left out.")])
+      "track table but no routine asks for them with an `ld a`.")])
 
 CFG = dict(rom="kingsvalley.rom", org=0x4000, frame=0x7B37, pide=0x7A9E,
            ram=(0xE010, 0xE03B), ram0=[(0xE03A, 0xB8)],

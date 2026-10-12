@@ -90,7 +90,7 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 <ul><li>la música de la sala (0x8B), sus primeros 219 cuadros;</li><li>el mapa del valle (0x91) entero, 168 cuadros;</li><li>el arranque de la tarea 3 (0x97), 244 cuadros de 261, tal como el juego lo pide.</li></ul>
 <p>El timbre no está cotejado: es el de un AY-3-8910 de manual, no una grabación del emulador. Las sondas están en <code>tools/omsx_psg.tcl</code> y <code>tools/coteja_psg.py</code>.</p>
 <h2 id="como-se-pide-una-pieza">Cómo se pide una pieza</h2>
-<p><code>reproduce_efecto</code> recibe el número en A. Los números bajos son efectos y del 0x87 en adelante hay música. Cada ficha ocupa catorce bytes desde 0xE010 y 0xE03A guarda la copia del mezclador del PSG, que el arranque deja en 0xB8. Las pistas «de la tabla» están en la tabla de pistas pero ninguna rutina las pide con un <code>ld a</code>; se omite la 0x83, de media hora sin repetirse.</p>
+<p><code>reproduce_efecto</code> recibe el número en A. Los números bajos son efectos y del 0x87 en adelante hay música. Cada ficha ocupa catorce bytes desde 0xE010 y 0xE03A guarda la copia del mezclador del PSG, que el arranque deja en 0xB8. Las pistas «de la tabla» están en la tabla de pistas pero ninguna rutina las pide con un <code>ld a</code>.</p>
 <h2 id="las-musicas">Las músicas</h2>
 <p><b>La música de la sala</b> (0x8B)</p>
 <p>Lo pide <code>bucle_de_juego</code>, <code>tarea_4_espera_a_jugar</code> y <code>tarea_10_pantalla_final</code>; dura 12,8 s y vuelve a empezar en el segundo 0,0.</p>
@@ -110,6 +110,9 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 <p><b>La pieza del 0x66B3</b> (0x8D)</p>
 <p>Lo pide <code>L_66B3</code>; dura 1,0 s.</p>
 <audio controls preload="none" src="../audio/musica_8D.mp3?v=faa6b0d1"></audio>
+<p><b>Pista 0x83 de la tabla</b> (0x83)</p>
+<p>Lo pide ninguna llamada directa: está en la tabla de pistas; dura 29,6 s.</p>
+<audio controls preload="none" src="../audio/musica_83.mp3?v=f22ab15c"></audio>
 <p><b>Pista 0x8C de la tabla</b> (0x8C)</p>
 <p>Lo pide ninguna llamada directa: está en la tabla de pistas; dura 2,0 s y vuelve a empezar en el segundo 0,9.</p>
 <audio controls preload="none" src="../audio/musica_8C.mp3?v=a9f21cf9"></audio>

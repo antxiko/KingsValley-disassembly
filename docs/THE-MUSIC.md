@@ -14,7 +14,7 @@ The timbre is not checked: it is a textbook AY-3-8910, not a recording of the em
 
 ## How a piece is asked for
 
-`reproduce_efecto` takes the number in A. Low numbers are effects and from 0x87 up there is music. Each record takes fourteen bytes from 0xE010 and 0xE03A holds the copy of the PSG mixer, which start-up leaves at 0xB8. The tracks marked «in the table» are in the track table but no routine asks for them with an `ld a`; 0x83, half an hour long without repeating, is left out.
+`reproduce_efecto` takes the number in A. Low numbers are effects and from 0x87 up there is music. Each record takes fourteen bytes from 0xE010 and 0xE03A holds the copy of the PSG mixer, which start-up leaves at 0xB8. The tracks marked «in the table» are in the track table but no routine asks for them with an `ld a`.
 
 ## The tunes
 
@@ -53,6 +53,12 @@ Asked for by `L_4211`; lasts 4.9 s.
 Asked for by `L_66B3`; lasts 1.0 s.
 
 <audio controls preload="none" src="audio/musica_8D.mp3?v=faa6b0d1"></audio>
+
+**Table track 0x83** (0x83)
+
+Asked for by ninguna llamada directa: está en la tabla de pistas; lasts 29.6 s.
+
+<audio controls preload="none" src="audio/musica_83.mp3?v=f22ab15c"></audio>
 
 **Table track 0x8C** (0x8C)
 

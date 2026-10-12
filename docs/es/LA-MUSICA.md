@@ -14,7 +14,7 @@ El timbre no está cotejado: es el de un AY-3-8910 de manual, no una grabación 
 
 ## Cómo se pide una pieza
 
-`reproduce_efecto` recibe el número en A. Los números bajos son efectos y del 0x87 en adelante hay música. Cada ficha ocupa catorce bytes desde 0xE010 y 0xE03A guarda la copia del mezclador del PSG, que el arranque deja en 0xB8. Las pistas «de la tabla» están en la tabla de pistas pero ninguna rutina las pide con un `ld a`; se omite la 0x83, de media hora sin repetirse.
+`reproduce_efecto` recibe el número en A. Los números bajos son efectos y del 0x87 en adelante hay música. Cada ficha ocupa catorce bytes desde 0xE010 y 0xE03A guarda la copia del mezclador del PSG, que el arranque deja en 0xB8. Las pistas «de la tabla» están en la tabla de pistas pero ninguna rutina las pide con un `ld a`.
 
 ## Las músicas
 
@@ -53,6 +53,12 @@ Lo pide `L_4211`; dura 4,9 s.
 Lo pide `L_66B3`; dura 1,0 s.
 
 <audio controls preload="none" src="../audio/musica_8D.mp3?v=faa6b0d1"></audio>
+
+**Pista 0x83 de la tabla** (0x83)
+
+Lo pide ninguna llamada directa: está en la tabla de pistas; dura 29,6 s.
+
+<audio controls preload="none" src="../audio/musica_83.mp3?v=f22ab15c"></audio>
 
 **Pista 0x8C de la tabla** (0x8C)
 

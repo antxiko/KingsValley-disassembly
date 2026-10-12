@@ -90,7 +90,7 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 <ul><li>the room tune (0x8B), its first 219 frames;</li><li>the valley map (0x91), whole, 168 frames;</li><li>the task 3 start (0x97), 244 frames of 261, as the game asks for it.</li></ul>
 <p>The timbre is not checked: it is a textbook AY-3-8910, not a recording of the emulator. The probes are <code>tools/omsx_psg.tcl</code> and <code>tools/coteja_psg.py</code>.</p>
 <h2 id="how-a-piece-is-asked-for">How a piece is asked for</h2>
-<p><code>reproduce_efecto</code> takes the number in A. Low numbers are effects and from 0x87 up there is music. Each record takes fourteen bytes from 0xE010 and 0xE03A holds the copy of the PSG mixer, which start-up leaves at 0xB8. The tracks marked «in the table» are in the track table but no routine asks for them with an <code>ld a</code>; 0x83, half an hour long without repeating, is left out.</p>
+<p><code>reproduce_efecto</code> takes the number in A. Low numbers are effects and from 0x87 up there is music. Each record takes fourteen bytes from 0xE010 and 0xE03A holds the copy of the PSG mixer, which start-up leaves at 0xB8. The tracks marked «in the table» are in the track table but no routine asks for them with an <code>ld a</code>.</p>
 <h2 id="the-tunes">The tunes</h2>
 <p><b>The room tune</b> (0x8B)</p>
 <p>Asked for by <code>bucle_de_juego</code>, <code>tarea_4_espera_a_jugar</code> y <code>tarea_10_pantalla_final</code>; lasts 12.8 s and starts again at second 0.0.</p>
@@ -110,6 +110,9 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 <p><b>The tune at 0x66B3</b> (0x8D)</p>
 <p>Asked for by <code>L_66B3</code>; lasts 1.0 s.</p>
 <audio controls preload="none" src="audio/musica_8D.mp3?v=faa6b0d1"></audio>
+<p><b>Table track 0x83</b> (0x83)</p>
+<p>Asked for by ninguna llamada directa: está en la tabla de pistas; lasts 29.6 s.</p>
+<audio controls preload="none" src="audio/musica_83.mp3?v=f22ab15c"></audio>
 <p><b>Table track 0x8C</b> (0x8C)</p>
 <p>Asked for by ninguna llamada directa: está en la tabla de pistas; lasts 2.0 s and starts again at second 0.9.</p>
 <audio controls preload="none" src="audio/musica_8C.mp3?v=a9f21cf9"></audio>
